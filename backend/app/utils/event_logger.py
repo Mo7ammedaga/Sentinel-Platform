@@ -1,6 +1,11 @@
+import logging
+
 from app.models import Event
 from app.extensions import db
 from flask import request
+
+logger = logging.getLogger(__name__)
+
 
 class EventLogger:
     """Log events for audit trail and security monitoring"""
@@ -50,5 +55,5 @@ class EventLogger:
             return event
         except Exception as e:
             db.session.rollback()
-            print(f"Error logging event: {e}")
+            logger.error("Error logging event: %s", e)
             return None

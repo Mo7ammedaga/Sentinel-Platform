@@ -1,17 +1,22 @@
+import logging
+
 from flask_socketio import emit, join_room, leave_room
 from flask import request
 
+logger = logging.getLogger(__name__)
+
+
 def register_websocket_events(socketio):
     """Register WebSocket event handlers"""
-    
+
     @socketio.on('connect')
     def handle_connect():
-        print(f"Client connected: {request.sid}")
+        logger.info("Client connected: %s", request.sid)
         emit('response', {'data': 'Connected to Sentinel Platform'})
-    
+
     @socketio.on('disconnect')
     def handle_disconnect():
-        print(f"Client disconnected: {request.sid}")
+        logger.info("Client disconnected: %s", request.sid)
     
     @socketio.on('join_org')
     def on_join_org(data):

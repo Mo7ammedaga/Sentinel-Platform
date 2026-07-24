@@ -41,6 +41,9 @@ class DevelopmentConfig(Config):
     # Longer access tokens in development for convenience (doc 12). Production
     # uses the short base-config value (15 min) plus the refresh-token flow.
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=24)
+    # Dev is intentionally permissive (the file:// dashboard sends Origin: null,
+    # and the React dev server origin varies). Production uses a strict allowlist.
+    CORS_ORIGINS = '*'
 
 
 class TestingConfig(Config):
@@ -56,3 +59,14 @@ class ProductionConfig(Config):
     DEBUG = False
     TESTING = False
     SQLALCHEMY_ECHO = False
+    # Connection pooling for a managed PostgreSQL cluster (doc 12). pool_pre_ping
+    # avoids handing out dead connections after a DB restart/idle timeout.
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_size': 20,
+        'max_overflow': 10,
+        'pool_timeout': 30,
+        'pool_recycle': 3600,
+        'pool_pre_ping': True,
+    }
+    # CORS must be an explicit allowlist in production (comma-separated env).
+    CORS_ORIGINS = os.environ.get('CORS_ORIGINS', '')
