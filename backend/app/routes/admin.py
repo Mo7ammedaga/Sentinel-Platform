@@ -34,6 +34,8 @@ def list_users():
 @validate_body(RoleUpdate)
 def set_user_role(user_id):
     """Assign a role to a user (this is how someone becomes analyst/manager/admin)."""
+    if user_id == request.user_id:
+        return jsonify({'error': 'Cannot change your own role'}), 400
     user = User.query.get(user_id)
     if user is None:
         return jsonify({'error': 'User not found'}), 404

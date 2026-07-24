@@ -13,12 +13,13 @@ import { WorkspacePage } from './pages/WorkspacePage';
 import { ChatPage } from './pages/ChatPage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { SearchPage } from './pages/SearchPage';
+import { UserManagementPage } from './pages/UserManagementPage';
 
-function Shell({ children, requireSecurity = false, requireWorkspace = false }: {
-  children: React.ReactElement; requireSecurity?: boolean; requireWorkspace?: boolean;
+function Shell({ children, requireSecurity = false, requireWorkspace = false, requireAdmin = false }: {
+  children: React.ReactElement; requireSecurity?: boolean; requireWorkspace?: boolean; requireAdmin?: boolean;
 }) {
   return (
-    <ProtectedRoute requireSecurity={requireSecurity} requireWorkspace={requireWorkspace}>
+    <ProtectedRoute requireSecurity={requireSecurity} requireWorkspace={requireWorkspace} requireAdmin={requireAdmin}>
       <Layout>{children}</Layout>
     </ProtectedRoute>
   );
@@ -37,6 +38,7 @@ export default function App() {
           <Route path="/notifications" element={<Shell><NotificationsPage /></Shell>} />
           <Route path="/dashboard" element={<Shell requireSecurity><DashboardPage /></Shell>} />
           <Route path="/alerts" element={<Shell requireSecurity><AlertsPage /></Shell>} />
+          <Route path="/admin/users" element={<Shell requireAdmin><UserManagementPage /></Shell>} />
           <Route path="/my-data" element={<Shell><MyDataPage /></Shell>} />
           <Route path="/privacy" element={<Shell><PrivacyPage /></Shell>} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

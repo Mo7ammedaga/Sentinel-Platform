@@ -100,6 +100,14 @@ export interface Message {
   is_read: boolean; created_at: string;
 }
 
+export interface ManagedUser {
+  id: number;
+  email: string;
+  name: string;
+  role: Role;
+  is_active: boolean;
+}
+
 export const INVESTIGATION_STATES = [
   'open',
   'assigned',

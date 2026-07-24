@@ -2,7 +2,7 @@ import { api } from './client';
 import {
   Alert, DashboardStats, HighRiskUser, Investigation, Paginated, User, UserEvent,
   Workspace, Project, Task, Note, FileItem, DirectoryUser, Message,
-  AppNotification, SearchResults,
+  AppNotification, SearchResults, ManagedUser, Role,
 } from '../types';
 
 interface AuthResponse { access_token: string; refresh_token: string; user: User; }
@@ -96,6 +96,13 @@ export const notificationsApi = {
 export const searchApi = {
   query: (q: string) =>
     api.get<SearchResults>('/search', { params: { q } }).then((r) => r.data),
+};
+
+export const adminApi = {
+  listUsers: () =>
+    api.get<{ users: ManagedUser[] }>('/admin/users').then((r) => r.data.users),
+  setRole: (userId: number, role: Role) =>
+    api.patch<ManagedUser>(`/admin/users/${userId}/role`, { role }).then((r) => r.data),
 };
 
 export const privacyApi = {

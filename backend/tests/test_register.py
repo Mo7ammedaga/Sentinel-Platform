@@ -55,3 +55,12 @@ def test_role_management_is_admin_only(client, analyst_headers):
     assert client.get('/api/v1/admin/users', headers=analyst_headers).status_code == 403
     assert client.patch('/api/v1/admin/users/1/role',
                         headers=analyst_headers, json={'role': 'admin'}).status_code == 403
+
+
+def test_admin_cannot_change_own_role(client, admin_headers, app):
+    from tests.conftest import user_id
+    with app.app_context():
+        me = user_id('admin@test.local')
+    r = client.patch(f'/api/v1/admin/users/{me}/role',
+                     headers=admin_headers, json={'role': 'employee'})
+    assert r.status_code == 400

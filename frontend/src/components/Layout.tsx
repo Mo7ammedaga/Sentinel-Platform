@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { useAuth, isSecurity, isWorkspace } from '../auth/AuthContext';
+import { useAuth, isSecurity, isWorkspace, isAdmin } from '../auth/AuthContext';
 import { notificationsApi } from '../api/endpoints';
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -8,6 +8,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const security = isSecurity(user?.role);
   const workspace = isWorkspace(user?.role);
+  const admin = isAdmin(user?.role);
   const [unread, setUnread] = useState(0);
 
   useEffect(() => {
@@ -56,6 +57,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </NavLink>
           {security && link('/dashboard', 'Security Dashboard')}
           {security && link('/alerts', 'Alerts')}
+          {admin && link('/admin/users', 'User Management')}
           {link('/my-data', 'My Data')}
           {link('/privacy', 'Privacy Notice')}
         </nav>
