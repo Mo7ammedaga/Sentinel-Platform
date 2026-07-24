@@ -61,6 +61,13 @@ def create_app(config_class=None):
     _configure_logging(app)
     _validate_production_config(app)
 
+    # Behind a reverse proxy (production), trust one hop of X-Forwarded-* so the
+    # real client IP is used for rate limiting and event logging. Not enabled in
+    # dev/test, where a client could otherwise spoof the header.
+    if not app.debug and not app.testing:
+        from werkzeug.middleware.proxy_fix import ProxyFix
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
+
     # CORS is driven by config: '*' in development (the file:// dashboard sends
     # Origin: null); an explicit allowlist in production.
     origins = _cors_origins(app.config.get('CORS_ORIGINS', '*'))
