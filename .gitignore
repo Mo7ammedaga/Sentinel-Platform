@@ -1,0 +1,18 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Logs
+*.log
+
+# Python (backend/ has its own, this covers stray root files)
+__pycache__/
+*.pyc
+
+# Environment files (never commit real secrets; only *.env.example is tracked)
+.env
+.env.*
+!.env.example
