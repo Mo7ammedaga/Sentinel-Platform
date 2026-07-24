@@ -113,6 +113,27 @@ def _update_risk_scores(user_ids):
             rs.last_flagged_at = datetime.utcnow()
 
 
+def list_alerts(status=None, limit=100):
+    """Alerts newest-first, enriched with WHO triggered them — an analyst
+    cannot investigate a bare user_id."""
+    query = Alert.query
+    if status:
+        query = query.filter_by(status=status)
+    alerts = query.order_by(Alert.created_at.desc()).limit(limit).all()
+
+    user_ids = {a.user_id for a in alerts}
+    users = {u.id: u for u in User.query.filter(User.id.in_(user_ids)).all()} if user_ids else {}
+
+    result = []
+    for a in alerts:
+        d = a.to_dict()
+        user = users.get(a.user_id)
+        d['user_email'] = user.email if user else None
+        d['user_name'] = user.get_full_name() if user else None
+        result.append(d)
+    return result
+
+
 # --- Investigation workflow (analyst-driven) --------------------------------
 def open_investigation(alert_id, analyst_id):
     alert = Alert.query.get(alert_id)

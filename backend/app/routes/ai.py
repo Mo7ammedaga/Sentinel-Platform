@@ -4,6 +4,7 @@ from flask import Blueprint, jsonify
 
 from app.extensions import socketio
 from app.events.websocket import emit_alert
+from app.models import User
 from app.services.security_service import run_analysis
 from app.utils.auth import token_required
 from app.utils.decorators import role_required
@@ -26,30 +27,35 @@ def analyze_events():
     if summary['users_analyzed'] == 0:
         return jsonify({'message': 'No recent events to analyze'}), 404
 
-    # Push each anomaly to its organization's room in real time.
-    for r in anomalies:
-        emit_alert(socketio, {
+    # An analyst cannot investigate a bare user_id — resolve WHO for every
+    # anomaly once, up front (avoids one query per alert).
+    user_ids = {r.event.user_id for r in anomalies}
+    users = {u.id: u for u in User.query.filter(User.id.in_(user_ids)).all()} if user_ids else {}
+
+    def _alert_payload(r):
+        user = users.get(r.event.user_id)
+        return {
             'event_id': r.event.id,
             'user_id': r.event.user_id,
+            'user_email': user.email if user else None,
+            'user_name': user.get_full_name() if user else None,
             'action': r.event.action_type,
             'risk_score': r.risk_score,
             'status': r.status,
             'confidence': r.confidence,
             'explanation': r.explanation,
-            'message': f'{r.status.title()} activity: {r.event.action_type}',
             'timestamp': r.event.created_at.isoformat(),
-        }, organization_id=r.event.organization_id)
+        }
+
+    # Push each anomaly to its organization's room in real time.
+    for r in anomalies:
+        payload = _alert_payload(r)
+        payload['message'] = (f'{r.status.title()} activity by '
+                              f'{payload["user_name"] or "user " + str(r.event.user_id)}: '
+                              f'{r.event.action_type}')
+        emit_alert(socketio, payload, organization_id=r.event.organization_id)
 
     return jsonify({
         **summary,
-        'alerts': [{
-            'event_id': r.event.id,
-            'user_id': r.event.user_id,
-            'action': r.event.action_type,
-            'risk_score': r.risk_score,
-            'status': r.status,
-            'confidence': r.confidence,
-            'explanation': r.explanation,
-            'timestamp': r.event.created_at.isoformat(),
-        } for r in anomalies[:20]],
+        'alerts': [_alert_payload(r) for r in anomalies[:20]],
     }), 200

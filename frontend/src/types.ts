@@ -19,6 +19,8 @@ export interface Alert {
   id: number;
   event_id: number;
   user_id: number;
+  user_email: string | null;
+  user_name: string | null;
   severity: 'suspicious' | 'critical';
   risk_score: number;
   title: string;
@@ -50,6 +52,8 @@ export interface HighRiskUser {
 export interface LiveAlert {
   event_id: number;
   user_id: number;
+  user_email: string | null;
+  user_name: string | null;
   action: string;
   risk_score: number;
   status: 'suspicious' | 'critical';

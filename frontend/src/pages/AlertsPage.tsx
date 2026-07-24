@@ -79,14 +79,17 @@ export function AlertsPage() {
             <Card key={a.id} className="flex items-start justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-slate-100">{a.title}</span>
+                  <span className="text-sm font-medium text-slate-100">
+                    {a.user_name || `User #${a.user_id}`}
+                  </span>
+                  {a.user_email && <span className="text-xs text-muted">{a.user_email}</span>}
                   <Badge status={a.severity} />
                   <Badge status={a.status} />
                 </div>
+                <div className="mt-1 text-sm text-slate-300">{a.title}</div>
                 <div className="mt-1 text-xs text-muted">{a.explanation}</div>
                 <div className="mt-1 text-xs text-slate-500">
-                  risk {a.risk_score.toFixed(0)} · user {a.user_id} ·{' '}
-                  {new Date(a.created_at).toLocaleString()}
+                  risk {a.risk_score.toFixed(0)} · {new Date(a.created_at).toLocaleString()}
                 </div>
               </div>
               {a.status !== 'closed' && (

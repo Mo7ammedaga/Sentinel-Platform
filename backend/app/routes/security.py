@@ -1,6 +1,5 @@
 from flask import Blueprint, request, jsonify
 
-from app.models import Alert
 from app.services import security_service
 from app.utils.auth import token_required
 from app.utils.decorators import role_required
@@ -14,14 +13,10 @@ security_bp = Blueprint('security', __name__, url_prefix='/api/v1/security')
 @token_required
 @role_required(*SECURITY_ROLES)
 def list_alerts():
-    """List AI-raised alerts, newest first. Optional ?status= filter."""
-    query = Alert.query
-    status = request.args.get('status')
-    if status:
-        query = query.filter_by(status=status)
-    alerts = query.order_by(Alert.created_at.desc()).limit(100).all()
-    return jsonify({'alerts': [a.to_dict() for a in alerts],
-                    'count': len(alerts)}), 200
+    """List AI-raised alerts, newest first, with WHO triggered them. Optional
+    ?status= filter."""
+    alerts = security_service.list_alerts(status=request.args.get('status'))
+    return jsonify({'alerts': alerts, 'count': len(alerts)}), 200
 
 
 @security_bp.route('/high-risk-users', methods=['GET'])
