@@ -177,7 +177,14 @@ flask-cors 6.0.5, bcrypt 5.0.0, PyJWT 2.13.0, scikit-learn 1.9.0, python-dotenv 
 
 ## Known Technical Debt (updated 2026-07-24)
 
-### 🔴 HIGH PRIORITY — Migration history is incomplete (schema not reproducible)
+### ✅ RESOLVED 2026-07-24 — Migration baseline rebuilt
+**Resolution:** squashed to a single baseline migration `06dc5dd045f9` that
+creates all 12 tables. Verified `flask db upgrade` on an empty DB reproduces the
+full schema; dev DB stamped to the baseline (data kept); `db.create_all()`
+removed from `run.py`. Fresh setup is now `flask db upgrade`. Original writeup
+kept below for context.
+
+### (historical) Migration history was incomplete (schema not reproducible)
 **Symptom:** A fresh clone running `flask db upgrade` creates only the `users`
 table. Every other table (`workspaces`, `projects`, `tasks`, `files`, `notes`,
 `messages`, `events`, `ai_analyses`) is absent from a clean migration run.
@@ -218,6 +225,8 @@ migration-driven — generate and commit a real migration; never rely on
 ```bash
 cd ~/Desktop/Sentinel-Platform/backend
 source venv/bin/activate
+export FLASK_APP=run.py
+flask db upgrade                   # provisions the full schema (migration-driven)
 lsof -ti:5000 | xargs -r kill -9   # if port busy
 python run.py
 ```
