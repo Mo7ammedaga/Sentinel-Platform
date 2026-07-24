@@ -4,7 +4,7 @@ from flask import Flask
 from flask_cors import CORS
 from flask_migrate import Migrate
 
-from app.config import DevelopmentConfig
+from app.config import get_config
 from app.extensions import db, socketio, limiter
 
 
@@ -30,9 +30,9 @@ def _configure_logging(app):
     app.logger.setLevel(level)
 
 
-def create_app(config_class=DevelopmentConfig):
+def create_app(config_class=None):
     app = Flask(__name__)
-    app.config.from_object(config_class)
+    app.config.from_object(config_class or get_config())
     _configure_logging(app)
 
     # CORS is driven by config: '*' in development (the file:// dashboard sends

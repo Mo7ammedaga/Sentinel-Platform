@@ -71,3 +71,16 @@ class ProductionConfig(Config):
     }
     # CORS must be an explicit allowlist in production (comma-separated env).
     CORS_ORIGINS = os.environ.get('CORS_ORIGINS', '')
+
+
+config_by_name = {
+    'development': DevelopmentConfig,
+    'testing': TestingConfig,
+    'production': ProductionConfig,
+}
+
+
+def get_config():
+    """Select the config class from SENTINEL_ENVIRONMENT (default: development)."""
+    env = os.environ.get('SENTINEL_ENVIRONMENT', 'development').lower()
+    return config_by_name.get(env, DevelopmentConfig)

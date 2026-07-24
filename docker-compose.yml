@@ -1,0 +1,36 @@
+# Sentinel Platform — local production-like stack (backend + PostgreSQL).
+# Usage: docker compose up --build
+# The backend runs migrations on start, then serves via gunicorn + gevent-websocket.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: sentinel
+      POSTGRES_PASSWORD: sentinel
+      POSTGRES_DB: sentinel
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sentinel"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build: ./backend
+    environment:
+      SENTINEL_ENVIRONMENT: production
+      DATABASE_URL: postgresql://sentinel:sentinel@db:5432/sentinel
+      # Replace these in a real deployment (use a secrets manager, not env files).
+      SECRET_KEY: change-me-in-real-deploy
+      JWT_SECRET_KEY: change-me-in-real-deploy
+      CORS_ORIGINS: http://localhost:3000
+      LOG_LEVEL: INFO
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "5000:5000"
+
+volumes:
+  pgdata:

@@ -21,3 +21,7 @@ pydantic==2.13.4
 flask-limiter==4.1.1
 pytest==9.1.1
 pytest-cov==7.1.0
+gunicorn==26.0.0
+gevent==26.7.0
+gevent-websocket==0.10.1
+psycopg2-binary==2.9.12
