@@ -1,0 +1,86 @@
+export type Role = 'employee' | 'manager' | 'analyst' | 'admin';
+
+export interface User {
+  id: number;
+  email: string;
+  name: string;
+  role: Role;
+}
+
+export interface DashboardStats {
+  total_events: number;
+  critical: number;
+  suspicious: number;
+  normal: number;
+  time_period: string;
+}
+
+export interface Alert {
+  id: number;
+  event_id: number;
+  user_id: number;
+  severity: 'suspicious' | 'critical';
+  risk_score: number;
+  title: string;
+  explanation: string;
+  status: 'open' | 'investigating' | 'closed';
+  created_at: string;
+}
+
+export interface Investigation {
+  id: number;
+  alert_id: number;
+  analyst_id: number | null;
+  state: string;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  closed_at: string | null;
+}
+
+export interface HighRiskUser {
+  user_id: number;
+  email: string | null;
+  name: string | null;
+  current_score: number;
+  open_alerts: number;
+  last_flagged_at: string | null;
+}
+
+export interface LiveAlert {
+  event_id: number;
+  user_id: number;
+  action: string;
+  risk_score: number;
+  status: 'suspicious' | 'critical';
+  confidence: number;
+  explanation: string;
+  message: string;
+  timestamp: string;
+}
+
+export interface UserEvent {
+  id: number;
+  action_type: string;
+  resource_type: string;
+  description: string | null;
+  ip_address: string | null;
+  status: string;
+  risk_score: number;
+  created_at: string;
+}
+
+export interface Paginated<T> {
+  items: T[];
+  pagination: { page: number; per_page: number; total: number; pages: number };
+}
+
+export const INVESTIGATION_STATES = [
+  'open',
+  'assigned',
+  'investigating',
+  'needs_evidence',
+  'false_positive',
+  'confirmed',
+  'closed',
+] as const;
