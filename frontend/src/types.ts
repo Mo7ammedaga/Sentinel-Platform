@@ -84,6 +84,13 @@ export interface Task {
 export interface Note { id: number; task_id: number; content: string; created_at: string; }
 export interface FileItem { id: number; task_id: number; filename: string; file_path: string; }
 export interface DirectoryUser { id: number; name: string; role: string; }
+export interface AppNotification {
+  id: number; type: string; title: string; body: string | null;
+  link: string | null; is_read: boolean; created_at: string;
+}
+export interface SearchResults {
+  projects: Project[]; tasks: Task[]; files: FileItem[]; notes: Note[];
+}
 export interface Message {
   id: number; sender_id: number; recipient_id: number; content: string;
   is_read: boolean; created_at: string;

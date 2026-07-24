@@ -1,12 +1,22 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth, isSecurity, isWorkspace } from '../auth/AuthContext';
+import { notificationsApi } from '../api/endpoints';
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const security = isSecurity(user?.role);
   const workspace = isWorkspace(user?.role);
+  const [unread, setUnread] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+    const poll = () => notificationsApi.unreadCount().then(setUnread).catch(() => {});
+    poll();
+    const id = setInterval(poll, 30_000);
+    return () => clearInterval(id);
+  }, [user]);
 
   const link = (to: string, label: string) => (
     <NavLink
@@ -31,6 +41,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <nav className="space-y-1">
           {workspace && link('/workspace', 'Workspace')}
           {workspace && link('/chat', 'Team Chat')}
+          {workspace && link('/search', 'Search')}
+          <NavLink to="/notifications"
+            className={({ isActive }) =>
+              `flex items-center justify-between rounded px-3 py-2 text-sm ${
+                isActive ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'
+              }`}>
+            <span>Notifications</span>
+            {unread > 0 && (
+              <span className="rounded-full bg-critical px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                {unread}
+              </span>
+            )}
+          </NavLink>
           {security && link('/dashboard', 'Security Dashboard')}
           {security && link('/alerts', 'Alerts')}
           {link('/my-data', 'My Data')}

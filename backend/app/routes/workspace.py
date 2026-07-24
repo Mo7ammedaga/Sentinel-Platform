@@ -221,3 +221,11 @@ def read_message(message_id):
 @role_required(*WORKSPACE_ROLES)
 def list_directory():
     return jsonify({'users': ws.list_directory(request.user_id)}), 200
+
+
+# --- Search across workspace content -----------------------------------------
+@workspace_bp.route('/search', methods=['GET'])
+@token_required
+@role_required(*WORKSPACE_ROLES)
+def search():
+    return jsonify(ws.search(request.user_id, request.args.get('q', ''))), 200

@@ -13,6 +13,7 @@ from app.models import (
     User, Workspace, Project, Task, File, Note, Message,
 )
 from app.utils.event_logger import EventLogger
+from app.services import notification_service
 
 
 def _org_of(user_id):
@@ -149,6 +150,10 @@ def create_task(actor_id, data):
              priority=data.get('priority', 'medium'))
     db.session.add(t)
     db.session.flush()
+    if t.assigned_to and t.assigned_to != actor_id:
+        notification_service.notify(
+            t.assigned_to, 'task_assigned', title='Task assigned',
+            body=f'You were assigned "{t.title}".', link='/workspace')
     _emit(actor_id, 'create_task', 'task', t.id, f'Created task "{t.title}"')
     return s_task(t), None
 
@@ -176,6 +181,10 @@ def update_task(actor_id, task_id, data):
         if field in data:
             setattr(t, field, data[field])
     db.session.flush()
+    if 'assigned_to' in data and t.assigned_to and t.assigned_to != actor_id:
+        notification_service.notify(
+            t.assigned_to, 'task_assigned', title='Task assigned',
+            body=f'You were assigned "{t.title}".', link='/workspace')
     # Completing a task is its own meaningful action.
     action = 'complete_task' if completing else 'update_task'
     _emit(actor_id, action, 'task', t.id,
@@ -281,6 +290,9 @@ def send_message(actor_id, data):
                 content=data['content'])
     db.session.add(m)
     db.session.flush()
+    notification_service.notify(
+        recipient.id, 'message_received', title='New message',
+        body='You have a new message.', link='/chat')
     _emit(actor_id, 'send_message', 'message', m.id,
           f'Sent a message to user {recipient.id}')
     return s_message(m), None
@@ -314,3 +326,21 @@ def list_directory(actor_id):
              .order_by(User.first_name).all())
     return [{'id': u.id, 'name': u.get_full_name(), 'role': u.role}
             for u in users if u.id != actor_id]
+
+
+def search(actor_id, query):
+    """Search projects, tasks, files and notes (doc 05 module 9)."""
+    term = f'%{query.strip()}%'
+    if not query.strip():
+        return {'projects': [], 'tasks': [], 'files': [], 'notes': []}
+    projects = (Project.query.filter(Project.is_active.is_(True),
+                                     Project.name.ilike(term)).limit(20).all())
+    tasks = Task.query.filter(Task.title.ilike(term)).limit(20).all()
+    files = File.query.filter(File.filename.ilike(term)).limit(20).all()
+    notes = Note.query.filter(Note.content.ilike(term)).limit(20).all()
+    return {
+        'projects': [s_project(p) for p in projects],
+        'tasks': [s_task(t) for t in tasks],
+        'files': [s_file(f) for f in files],
+        'notes': [s_note(n) for n in notes],
+    }

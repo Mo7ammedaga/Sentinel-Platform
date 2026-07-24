@@ -2,6 +2,7 @@ import { api } from './client';
 import {
   Alert, DashboardStats, HighRiskUser, Investigation, Paginated, User, UserEvent,
   Workspace, Project, Task, Note, FileItem, DirectoryUser, Message,
+  AppNotification, SearchResults,
 } from '../types';
 
 interface AuthResponse { access_token: string; refresh_token: string; user: User; }
@@ -80,6 +81,21 @@ export const chatApi = {
   send: (recipient_id: number, content: string) =>
     api.post<Message>('/messages', { recipient_id, content }).then((r) => r.data),
   markRead: (id: number) => api.post(`/messages/${id}/read`).then((r) => r.data),
+};
+
+export const notificationsApi = {
+  list: () =>
+    api.get<Paginated<AppNotification>>('/notifications', { params: { per_page: 50 } })
+      .then((r) => r.data.items),
+  unreadCount: () =>
+    api.get<{ unread: number }>('/notifications/unread-count').then((r) => r.data.unread),
+  markRead: (id: number) => api.post(`/notifications/${id}/read`).then((r) => r.data),
+  markAllRead: () => api.post('/notifications/read-all').then((r) => r.data),
+};
+
+export const searchApi = {
+  query: (q: string) =>
+    api.get<SearchResults>('/search', { params: { q } }).then((r) => r.data),
 };
 
 export const privacyApi = {
