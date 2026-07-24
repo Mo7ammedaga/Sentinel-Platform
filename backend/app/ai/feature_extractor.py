@@ -17,8 +17,14 @@ from datetime import timedelta
 
 import numpy as np
 
-# Actions that carry higher exfiltration / impact risk.
-SENSITIVE_ACTIONS = {"download_file", "delete"}
+# Actions that carry higher exfiltration / impact risk. Prefix-based so the
+# workspace CRUD taxonomy (delete_project, delete_file, download_file, ...) is
+# recognized without listing every verb+resource combination.
+SENSITIVE_PREFIXES = ("download", "delete", "export")
+
+
+def is_sensitive_action(action_type):
+    return bool(action_type) and action_type.startswith(SENSITIVE_PREFIXES)
 
 # The feature vector layout. The analyzer relies on this order.
 FEATURE_NAMES = [
@@ -91,7 +97,7 @@ def extract_user_features(events):
             "events_last_5_min": float(i - p5 + 1),
             "events_last_1_hour": float(i - p1 + 1),
             "distinct_actions_last_hour": float(len(action_window)),
-            "is_sensitive_action": 1.0 if e.action_type in SENSITIVE_ACTIONS else 0.0,
+            "is_sensitive_action": 1.0 if is_sensitive_action(e.action_type) else 0.0,
             "is_new_ip_for_user": 0.0 if e.ip_address in seen_ips else 1.0,
             "is_new_user_agent_for_user": 0.0 if e.user_agent in seen_uas else 1.0,
             "minutes_since_prev_event": gap_min,

@@ -41,6 +41,29 @@
 > - Removed dead code: old `app/utils/ai_engine.py`, `seed_demo.py`.
 > - **Remaining Phase A:** A8 (refresh-token endpoint). A7 (login page) needs the
 >   frontend-direction decision. Then Phase B (RBAC, Alert/Investigation models, CRUD).
+>
+> ## ⚠️ Session Update 3 — 2026-07-24 (autonomous, Phase B: B3, B1, B2)
+> - **B3 RBAC** committed 1fd59c0: `@role_required` + doc-04 matrix; security
+>   endpoints are analyst/admin only.
+> - **B1** committed 3625ceb: Alert / Investigation / RiskScore models (real
+>   migration f213cefe9a15), `security_service`, security routes, analyst-action
+>   auditing. Business logic moved out of routes into the service layer.
+> - **B2** (this update): workspace CRUD. `app/services/workspace_service.py` +
+>   `app/routes/workspace.py` (one blueprint, thin routes) covering
+>   workspaces/projects/tasks/files/notes/messages. Design decisions:
+>   * Every mutation emits EXACTLY ONE Event (create/update/delete/complete/
+>     upload/download/send/read) via EventLogger — feeds the AI real behaviour.
+>   * REST + `{items, pagination}` envelope (`app/utils/api.py`) for the future
+>     React client. `?page`/`?per_page` (clamped). This satisfies **B6**.
+>   * Workspace routes are employee/manager/admin only (WORKSPACE_ROLES); analysts
+>     are security-only (doc 04).
+>   * AI `is_sensitive_action` is now prefix-based (download*/delete*/export*) so
+>     the new action taxonomy is recognized.
+>   * Light validation (required fields -> 400). Full schema validation (B4) and
+>     centralized error handlers (B5) are the next milestone.
+> - **Interim note on multi-tenant:** listing is scoped where cheap (workspaces by
+>   org, messages by participant); strict per-org filtering on child entities is a
+>   follow-up (MVP is single-org).
 
 ## What This Is
 AI-powered cybersecurity monitoring platform. Monitors employee behavior in a

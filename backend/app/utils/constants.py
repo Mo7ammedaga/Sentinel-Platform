@@ -18,6 +18,10 @@ class Roles:
 # analytics (doc 04 permission matrix). Everyone else is workspace-only.
 SECURITY_ROLES = (Roles.ANALYST, Roles.ADMIN)
 
+# Roles permitted to use the Workspace (projects/tasks/files/notes/chat).
+# Security Analysts are security-only and do not touch business data (doc 04).
+WORKSPACE_ROLES = (Roles.EMPLOYEE, Roles.MANAGER, Roles.ADMIN)
+
 
 class AlertStatus:
     """Lifecycle of an AI-raised alert (the container an analyst works from)."""
