@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { apiError } from '../api/client';
 import { ErrorNote } from '../components/ui';
@@ -63,6 +63,9 @@ export function LoginPage() {
         >
           {busy ? 'Signing in…' : 'Sign in'}
         </button>
+        <div className="text-center text-xs text-muted">
+          No account? <Link to="/signup" className="text-accent">Create one</Link>
+        </div>
       </form>
     </div>
   );

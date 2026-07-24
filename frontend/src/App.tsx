@@ -4,6 +4,7 @@ import { AuthProvider } from './auth/AuthContext';
 import { ProtectedRoute } from './auth/ProtectedRoute';
 import { Layout } from './components/Layout';
 import { LoginPage } from './pages/LoginPage';
+import { SignupPage } from './pages/SignupPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { AlertsPage } from './pages/AlertsPage';
 import { MyDataPage } from './pages/MyDataPage';
@@ -23,6 +24,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
           <Route path="/dashboard" element={<Shell requireSecurity><DashboardPage /></Shell>} />
           <Route path="/alerts" element={<Shell requireSecurity><AlertsPage /></Shell>} />
           <Route path="/my-data" element={<Shell><MyDataPage /></Shell>} />

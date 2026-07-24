@@ -3,11 +3,17 @@ import {
   Alert, DashboardStats, HighRiskUser, Investigation, Paginated, User, UserEvent,
 } from '../types';
 
+interface AuthResponse { access_token: string; refresh_token: string; user: User; }
+
+export interface RegisterInput {
+  email: string; password: string; first_name: string; last_name: string;
+}
+
 export const authApi = {
   login: (email: string, password: string) =>
-    api.post<{ access_token: string; refresh_token: string; user: User }>(
-      '/auth/login', { email, password }
-    ).then((r) => r.data),
+    api.post<AuthResponse>('/auth/login', { email, password }).then((r) => r.data),
+  register: (input: RegisterInput) =>
+    api.post<AuthResponse>('/auth/register', input).then((r) => r.data),
   profile: () => api.get<{ user: User }>('/auth/profile').then((r) => r.data.user),
 };
 

@@ -1,10 +1,57 @@
 from flask import Blueprint, request, jsonify
 from app.models import User
-from app.extensions import limiter
+from app.extensions import db, limiter
 from app.utils.auth import TokenManager, token_required
 from app.utils.event_logger import EventLogger
+from app.utils.validation import validate_body, validated_data
+from app.utils.constants import Roles
+from app.schemas.auth import RegisterRequest
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/v1/auth')
+
+# MVP is single-organization; new sign-ups join it.
+DEFAULT_ORG = 'org_001'
+
+
+def _tokens_for(user):
+    return {
+        'access_token': TokenManager.generate_token(user.id, user.email, user.role),
+        'refresh_token': TokenManager.generate_refresh_token(user.id),
+    }
+
+
+def _user_dict(user):
+    return {'id': user.id, 'email': user.email, 'name': user.get_full_name(),
+            'role': user.role}
+
+
+@auth_bp.route('/register', methods=['POST'])
+@limiter.limit("5 per minute")
+@validate_body(RegisterRequest)
+def register():
+    """Public self-registration. Always creates an EMPLOYEE — elevated roles
+    (manager/analyst/admin) are assigned by an administrator, never self-chosen.
+    """
+    data = validated_data()
+    email = data['email'].strip().lower()
+    if User.query.filter_by(email=email).first():
+        return jsonify({'error': 'Email already registered'}), 409
+
+    user = User(email=email, first_name=data['first_name'],
+                last_name=data['last_name'], role=Roles.EMPLOYEE,
+                organization_id=DEFAULT_ORG)
+    user.set_password(data['password'])
+    db.session.add(user)
+    db.session.commit()
+
+    EventLogger.log_event(
+        user_id=user.id, organization_id=user.organization_id,
+        action_type='register', resource_type='user',
+        description='User registered')
+
+    tokens = _tokens_for(user)          # auto-login on signup
+    return jsonify({**tokens, 'token': tokens['access_token'],
+                    'user': _user_dict(user)}), 201
 
 @auth_bp.route('/login', methods=['POST'])
 @limiter.limit("10 per minute")
