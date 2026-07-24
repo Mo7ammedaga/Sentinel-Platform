@@ -213,3 +213,11 @@ def list_messages():
 @role_required(*WORKSPACE_ROLES)
 def read_message(message_id):
     return _result(*ws.read_message(request.user_id, message_id))
+
+
+# --- Directory (colleagues to chat with) -------------------------------------
+@workspace_bp.route('/users', methods=['GET'])
+@token_required
+@role_required(*WORKSPACE_ROLES)
+def list_directory():
+    return jsonify({'users': ws.list_directory(request.user_id)}), 200

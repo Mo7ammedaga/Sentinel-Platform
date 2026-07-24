@@ -10,6 +10,7 @@ import { AlertsPage } from './pages/AlertsPage';
 import { MyDataPage } from './pages/MyDataPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { WorkspacePage } from './pages/WorkspacePage';
+import { ChatPage } from './pages/ChatPage';
 
 function Shell({ children, requireSecurity = false, requireWorkspace = false }: {
   children: React.ReactElement; requireSecurity?: boolean; requireWorkspace?: boolean;
@@ -29,6 +30,7 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/workspace" element={<Shell requireWorkspace><WorkspacePage /></Shell>} />
+          <Route path="/chat" element={<Shell requireWorkspace><ChatPage /></Shell>} />
           <Route path="/dashboard" element={<Shell requireSecurity><DashboardPage /></Shell>} />
           <Route path="/alerts" element={<Shell requireSecurity><AlertsPage /></Shell>} />
           <Route path="/my-data" element={<Shell><MyDataPage /></Shell>} />

@@ -30,6 +30,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
         <nav className="space-y-1">
           {workspace && link('/workspace', 'Workspace')}
+          {workspace && link('/chat', 'Team Chat')}
           {security && link('/dashboard', 'Security Dashboard')}
           {security && link('/alerts', 'Alerts')}
           {link('/my-data', 'My Data')}

@@ -305,3 +305,12 @@ def read_message(actor_id, message_id):
         db.session.flush()
         _emit(actor_id, 'read_message', 'message', m.id, 'Read a message')
     return s_message(m), None
+
+
+def list_directory(actor_id):
+    """Colleagues in the same organization (for choosing a chat recipient)."""
+    org = _org_of(actor_id)
+    users = (User.query.filter_by(organization_id=org, is_active=True)
+             .order_by(User.first_name).all())
+    return [{'id': u.id, 'name': u.get_full_name(), 'role': u.role}
+            for u in users if u.id != actor_id]

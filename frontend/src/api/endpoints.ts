@@ -1,7 +1,7 @@
 import { api } from './client';
 import {
   Alert, DashboardStats, HighRiskUser, Investigation, Paginated, User, UserEvent,
-  Workspace, Project, Task, Note, FileItem,
+  Workspace, Project, Task, Note, FileItem, DirectoryUser, Message,
 } from '../types';
 
 interface AuthResponse { access_token: string; refresh_token: string; user: User; }
@@ -68,6 +68,18 @@ export const workspaceApi = {
     api.post<FileItem>('/files', { task_id, filename, file_path: `/uploads/${filename}` })
       .then((r) => r.data),
   downloadFile: (id: number) => api.post(`/files/${id}/download`).then((r) => r.data),
+};
+
+// Team chat (direct messages between colleagues).
+export const chatApi = {
+  directory: () =>
+    api.get<{ users: DirectoryUser[] }>('/users').then((r) => r.data.users),
+  conversation: (withUserId: number) =>
+    api.get<Paginated<Message>>('/messages', { params: { with: withUserId, per_page: 100 } })
+      .then((r) => r.data.items),
+  send: (recipient_id: number, content: string) =>
+    api.post<Message>('/messages', { recipient_id, content }).then((r) => r.data),
+  markRead: (id: number) => api.post(`/messages/${id}/read`).then((r) => r.data),
 };
 
 export const privacyApi = {
