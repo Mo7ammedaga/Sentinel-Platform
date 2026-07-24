@@ -18,3 +18,4 @@ python-socketio==5.10.0
 python-engineio==4.8.0
 flask-cors==6.0.5
 pydantic==2.13.4
+flask-limiter==4.1.1

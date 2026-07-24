@@ -1,12 +1,13 @@
 from flask import Blueprint, request, jsonify
 from app.models import User
-from app.extensions import db
+from app.extensions import db, limiter
 from app.utils.auth import TokenManager
 from app.utils.event_logger import EventLogger
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/v1/auth')
 
 @auth_bp.route('/login', methods=['POST'])
+@limiter.limit("10 per minute")
 def login():
     """
     Login endpoint
@@ -60,6 +61,7 @@ def login():
 
 
 @auth_bp.route('/refresh', methods=['POST'])
+@limiter.limit("20 per minute")
 def refresh():
     """Exchange a valid refresh token for a new access token."""
     data = request.get_json(silent=True) or {}

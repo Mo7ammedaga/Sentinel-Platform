@@ -5,7 +5,7 @@ from flask_cors import CORS
 from flask_migrate import Migrate
 
 from app.config import DevelopmentConfig
-from app.extensions import db, socketio
+from app.extensions import db, socketio, limiter
 
 
 def _cors_origins(value):
@@ -42,6 +42,7 @@ def create_app(config_class=DevelopmentConfig):
     db.init_app(app)
     Migrate(app, db)
     socketio.init_app(app, cors_allowed_origins=origins)
+    limiter.init_app(app)
 
     # Register real-time WebSocket handlers on the shared socketio instance.
     from app.events.websocket import register_websocket_events
