@@ -87,6 +87,18 @@
 >   (subject access, own data). E5 audit done in B1.
 > - **Remaining:** Phase D React frontend; E3 retention/purge; E6 UI language; E7
 >   human-review doc. C9 (Celery/Redis) deferred.
+>
+> ## ✅ Session Update 5 — 2026-07-24 (Phase D + Phase E complete)
+> - **Phase D** React+TS+Tailwind SPA in `frontend/` (commit f6b059f): axios client
+>   with refresh-on-401, AuthContext + role-gated ProtectedRoute, pages
+>   Login/Dashboard(live Socket.IO)/Alerts(investigations)/MyData(export)/Privacy.
+>   `tsc --noEmit` clean, `npm run build` compiles. Browser UX = human verify step.
+> - **Phase E complete:** E3 retention purge (`POST /admin/retention/purge`, admin
+>   only, preserves alerted events, cascades AIAnalysis) + tests; E6 UI language
+>   guardrails in the frontend; E7 `docs/15 - Human Review and Compliance.md`.
+> - Root `README.md` written (was empty). Tests: **29 passing**.
+> - **Only deferred item:** C9 (Celery/Redis async processing) — per constitution,
+>   revisit when event volume justifies it.
 
 ## What This Is
 AI-powered cybersecurity monitoring platform. Monitors employee behavior in a

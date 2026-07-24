@@ -62,12 +62,14 @@ def create_app(config_class=None):
     from app.routes.security import security_bp
     from app.routes.workspace import workspace_bp
     from app.routes.privacy import privacy_bp
+    from app.routes.admin import admin_bp
     app.register_blueprint(auth_bp)
     app.register_blueprint(ai_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(security_bp)
     app.register_blueprint(workspace_bp)
     app.register_blueprint(privacy_bp)
+    app.register_blueprint(admin_bp)
 
     @app.route("/")
     def home():

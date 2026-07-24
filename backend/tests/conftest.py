@@ -21,6 +21,7 @@ SEED_USERS = [
     ('analyst@test.local', 'analyst'),
     ('employee@test.local', 'employee'),
     ('manager@test.local', 'manager'),
+    ('admin@test.local', 'admin'),
 ]
 
 
@@ -81,13 +82,22 @@ def manager_headers(client):
     return {'Authorization': f'Bearer {_token(client, "manager@test.local")}'}
 
 
+@pytest.fixture
+def admin_headers(client):
+    return {'Authorization': f'Bearer {_token(client, "admin@test.local")}'}
+
+
 def user_id(email):
     return User.query.filter_by(email=email).first().id
 
 
 def seed_history_with_anomaly(uid):
-    """~60 normal work-hours events for a user + a clear off-hours download
-    burst in the last 24h, so analysis has a baseline and an anomaly."""
+    """~90 normal work-hours logins for a user + a clear anomaly in the last 24h.
+
+    The anomaly is placed 2 hours ago (always inside the analyze window) and is
+    made unambiguously unusual — a sensitive download burst from a new IP and a
+    new device — so detection does not depend on the run's time of day.
+    """
     now = datetime.utcnow()
     midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
     events = []
@@ -98,12 +108,12 @@ def seed_history_with_anomaly(uid):
                 user_id=uid, organization_id=ORG, action_type='login',
                 resource_type='user', ip_address='10.0.0.5',
                 user_agent='UA', created_at=day.replace(hour=10 + i * 2)))
-    # anomaly: 5 downloads at ~3am (within last 24h), off-hours + sensitive
-    three = midnight - timedelta(hours=21)     # yesterday 03:00-ish
+    # anomaly: 5 downloads ~2h ago, new IP + new device (within the 24h window)
+    start = now - timedelta(hours=2)
     for i in range(5):
         events.append(Event(
             user_id=uid, organization_id=ORG, action_type='download_file',
-            resource_type='file', ip_address='10.0.0.5', user_agent='UA',
-            created_at=three + timedelta(minutes=i)))
+            resource_type='file', ip_address='203.0.113.9',
+            user_agent='NewDevice', created_at=start + timedelta(minutes=i)))
     _db.session.add_all(events)
     _db.session.commit()
