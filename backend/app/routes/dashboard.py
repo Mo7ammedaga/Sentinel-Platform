@@ -1,10 +1,11 @@
-from flask import Blueprint, request, jsonify
-from app.models import Event, User, Workspace
+from datetime import datetime, timedelta
+
+from flask import Blueprint, jsonify
+
+from app.models import Event
 from app.utils.auth import token_required
 from app.utils.decorators import role_required
 from app.utils.constants import SECURITY_ROLES
-from datetime import datetime, timedelta
-from sqlalchemy import func
 
 dashboard_bp = Blueprint('dashboard', __name__, url_prefix='/api/v1/dashboard')
 

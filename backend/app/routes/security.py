@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 
-from app.models import Alert, Investigation
+from app.models import Alert
 from app.services import security_service
 from app.utils.auth import token_required
 from app.utils.decorators import role_required

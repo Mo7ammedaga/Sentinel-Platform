@@ -13,12 +13,6 @@ def current_user():
     return User.query.get(request.user_id)
 
 
-def require_fields(data, *fields):
-    """Return a list of missing required fields (empty if all present)."""
-    data = data or {}
-    return [f for f in fields if data.get(f) in (None, '')]
-
-
 def paginate(query, default_per_page=20, max_per_page=100):
     """Paginate a query using ?page & ?per_page (clamped)."""
     page = request.args.get('page', 1, type=int) or 1

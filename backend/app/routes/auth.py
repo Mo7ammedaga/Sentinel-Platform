@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from app.models import User
-from app.extensions import db, limiter
-from app.utils.auth import TokenManager
+from app.extensions import limiter
+from app.utils.auth import TokenManager, token_required
 from app.utils.event_logger import EventLogger
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/v1/auth')
@@ -86,26 +86,16 @@ def refresh():
 
 
 @auth_bp.route('/profile', methods=['GET'])
+@token_required
 def profile():
-    """
-    Protected route - returns current user profile
-    Requires: JWT token in Authorization header
-    
-    العربي: مسار محمي - يرجع بيانات الـ user الحالي
-    """
-    from app.utils.auth import token_required
-    
-    @token_required
-    def get_profile():
-        user = User.query.get(request.user_id)
-        return jsonify({
-            'user': {
-                'id': user.id,
-                'email': user.email,
-                'name': user.get_full_name(),
-                'role': user.role,
-                'organization': user.organization_id
-            }
-        }), 200
-    
-    return get_profile()
+    """Protected route — returns the current user's profile."""
+    user = User.query.get(request.user_id)
+    return jsonify({
+        'user': {
+            'id': user.id,
+            'email': user.email,
+            'name': user.get_full_name(),
+            'role': user.role,
+            'organization': user.organization_id,
+        }
+    }), 200

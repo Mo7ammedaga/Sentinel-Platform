@@ -21,10 +21,10 @@ workspace_bp = Blueprint('workspace', __name__, url_prefix='/api/v1')
 
 
 def _result(data, error, ok_code=200):
-    """Map a service (data, error) tuple to a JSON response."""
+    """Map a service (data, error) tuple to a JSON response. Service errors are
+    all 'not found' cases; bad input is already rejected by @validate_body (422)."""
     if error:
-        code = 400 if error.startswith('Missing') else 404
-        return jsonify({'error': error}), code
+        return jsonify({'error': error}), 404
     return jsonify(data), ok_code
 
 

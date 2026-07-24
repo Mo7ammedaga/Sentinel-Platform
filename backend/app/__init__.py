@@ -30,10 +30,36 @@ def _configure_logging(app):
     app.logger.setLevel(level)
 
 
+# The insecure code-level defaults from config.Config — never valid in production.
+_INSECURE_DEFAULTS = {
+    'dev-secret-key-change-in-production',
+    'jwt-secret-key-change-in-production',
+}
+
+
+def _validate_production_config(app):
+    """Refuse to start in production with default secrets (forgeable JWTs) or
+    without a CORS allowlist. Fails fast with a clear message."""
+    if app.config.get('DEBUG') or app.config.get('TESTING'):
+        return
+    problems = []
+    if app.config.get('SECRET_KEY') in _INSECURE_DEFAULTS:
+        problems.append('SECRET_KEY is the insecure default')
+    if app.config.get('JWT_SECRET_KEY') in _INSECURE_DEFAULTS:
+        problems.append('JWT_SECRET_KEY is the insecure default')
+    if not app.config.get('CORS_ORIGINS'):
+        problems.append('CORS_ORIGINS is empty (no allowlist)')
+    if problems:
+        raise RuntimeError(
+            'Refusing to start in production: ' + '; '.join(problems) +
+            '. Set these via environment variables.')
+
+
 def create_app(config_class=None):
     app = Flask(__name__)
     app.config.from_object(config_class or get_config())
     _configure_logging(app)
+    _validate_production_config(app)
 
     # CORS is driven by config: '*' in development (the file:// dashboard sends
     # Origin: null); an explicit allowlist in production.
