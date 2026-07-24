@@ -71,6 +71,22 @@
 >   give every failure one shape `{error, details?}` (validation 422, 404, 405,
 >   500). **Phase B is COMPLETE (B1-B6).** Next: rebuild migration baseline
 >   (the documented debt), then Phase C hardening.
+>
+> ## ⚠️ Session Update 4 — 2026-07-24 (Phase C hardening + Phase E backend)
+> Backend complete through Phase C. Commits: 2f285aa (migration baseline),
+> 34b4a06 (C3-C6), a970a53 (C2), e231280 (C1 tests), 78db003 (C7/C8 Docker),
+> c3a34fc (Phase E backend).
+> - **C1** pytest suite: 27 tests, 82% coverage. Run: `pytest`.
+> - **C2** flask-limiter (/login 10min, /refresh 20min; off in TestingConfig).
+> - **C3** LOG_LEVEL logging, all print() removed. **C4** config CORS (dev '*',
+>   prod allowlist). **C5** security headers. **C6** Postgres pooling.
+> - **C7/C8** Dockerfile + entrypoint (`flask db upgrade`) + docker-compose
+>   (backend + Postgres16); gunicorn + gevent-websocket (gevent over deprecated
+>   eventlet). Config via SENTINEL_ENVIRONMENT (`get_config()`).
+> - **Phase E backend:** `/privacy/notice` (public), `/me/events[/export]`
+>   (subject access, own data). E5 audit done in B1.
+> - **Remaining:** Phase D React frontend; E3 retention/purge; E6 UI language; E7
+>   human-review doc. C9 (Celery/Redis) deferred.
 
 ## What This Is
 AI-powered cybersecurity monitoring platform. Monitors employee behavior in a
