@@ -146,6 +146,27 @@ flask-cors 6.0.5, bcrypt 5.0.0, PyJWT 2.13.0, scikit-learn 1.9.0, python-dotenv 
 9. ✅ Frontend — plain HTML dashboard works, stats now populate (fixed 2026-07-24)
 
 ## Known Technical Debt (updated 2026-07-24)
+
+### 🔴 HIGH PRIORITY — Migration history is incomplete (schema not reproducible)
+**Symptom:** A fresh clone running `flask db upgrade` creates only the `users`
+table. Every other table (`workspaces`, `projects`, `tasks`, `files`, `notes`,
+`messages`, `events`, `ai_analyses`) is absent from a clean migration run.
+**Root cause:** `run.py`'s `db.create_all()` creates any missing tables at
+startup from the models, so the tables "just appear" in dev even though no
+migration was ever written for them. Alembic autogenerate then sees the tables
+already present in the DB and emits nothing — so the gap is invisible until a
+truly clean deploy. Only `users` has a real migration.
+**Correct long-term fix (do BEFORE Phase C / production):** stop, rebuild the
+migration baseline so the entire schema is created purely by `flask db upgrade`:
+  1. On a scratch/empty database, `flask db migrate` to autogenerate a complete
+     baseline covering all current models (or squash existing history).
+  2. Remove the reliance on `db.create_all()` in `run.py` for provisioning.
+  3. Verify `flask db upgrade` on an empty DB reproduces the full schema.
+**Interim rule (in force now):** every NEW model/schema change is fully
+migration-driven — generate and commit a real migration; never rely on
+`create_all()` for new tables. (B1's Alert/Investigation/RiskScore follow this.)
+
+### Other
 - ✅ ~~`AIEngine.extract_features()` uses `np.random`~~ — FIXED (deterministic features)
 - ⛔ `frontend-simple/index.html` has a hardcoded JWT — still needs a real login form
 - ⛔ `frontend/` is an unused create-react-app scaffold — decide: delete or build on it

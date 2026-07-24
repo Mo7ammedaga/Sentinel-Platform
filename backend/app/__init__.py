@@ -24,9 +24,11 @@ def create_app(config_class=DevelopmentConfig):
     from app.routes.auth import auth_bp
     from app.routes.ai import ai_bp
     from app.routes.dashboard import dashboard_bp
+    from app.routes.security import security_bp
     app.register_blueprint(auth_bp)
     app.register_blueprint(ai_bp)
     app.register_blueprint(dashboard_bp)
+    app.register_blueprint(security_bp)
 
     @app.route("/")
     def home():
