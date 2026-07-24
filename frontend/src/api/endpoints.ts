@@ -1,6 +1,7 @@
 import { api } from './client';
 import {
   Alert, DashboardStats, HighRiskUser, Investigation, Paginated, User, UserEvent,
+  Workspace, Project, Task, Note, FileItem,
 } from '../types';
 
 interface AuthResponse { access_token: string; refresh_token: string; user: User; }
@@ -30,6 +31,43 @@ export const securityApi = {
     api.post<Investigation>(`/security/alerts/${alertId}/investigations`).then((r) => r.data),
   updateInvestigation: (id: number, state: string, notes?: string) =>
     api.patch<Investigation>(`/security/investigations/${id}`, { state, notes }).then((r) => r.data),
+};
+
+// Workspace — each mutating call generates a behavioural Event server-side.
+export const workspaceApi = {
+  listWorkspaces: () =>
+    api.get<Paginated<Workspace>>('/workspaces').then((r) => r.data.items),
+  createWorkspace: (name: string) =>
+    api.post<Workspace>('/workspaces', { name }).then((r) => r.data),
+
+  listProjects: () =>
+    api.get<Paginated<Project>>('/projects', { params: { per_page: 100 } })
+      .then((r) => r.data.items),
+  createProject: (workspace_id: number, name: string) =>
+    api.post<Project>('/projects', { workspace_id, name }).then((r) => r.data),
+
+  listTasks: (project_id: number) =>
+    api.get<Paginated<Task>>('/tasks', { params: { project_id, per_page: 100 } })
+      .then((r) => r.data.items),
+  createTask: (project_id: number, title: string) =>
+    api.post<Task>('/tasks', { project_id, title }).then((r) => r.data),
+  completeTask: (id: number) =>
+    api.put<Task>(`/tasks/${id}`, { status: 'completed' }).then((r) => r.data),
+  deleteTask: (id: number) => api.delete(`/tasks/${id}`).then((r) => r.data),
+
+  listNotes: (task_id: number) =>
+    api.get<Paginated<Note>>('/notes', { params: { task_id, per_page: 100 } })
+      .then((r) => r.data.items),
+  createNote: (task_id: number, content: string) =>
+    api.post<Note>('/notes', { task_id, content }).then((r) => r.data),
+
+  listFiles: (task_id: number) =>
+    api.get<Paginated<FileItem>>('/files', { params: { task_id, per_page: 100 } })
+      .then((r) => r.data.items),
+  uploadFile: (task_id: number, filename: string) =>
+    api.post<FileItem>('/files', { task_id, filename, file_path: `/uploads/${filename}` })
+      .then((r) => r.data),
+  downloadFile: (id: number) => api.post(`/files/${id}/download`).then((r) => r.data),
 };
 
 export const privacyApi = {

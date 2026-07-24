@@ -60,3 +60,5 @@ export function useAuth(): AuthState {
 }
 
 export const isSecurity = (role?: string) => role === 'analyst' || role === 'admin';
+export const isWorkspace = (role?: string) =>
+  role === 'employee' || role === 'manager' || role === 'admin';

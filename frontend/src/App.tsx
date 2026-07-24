@@ -9,10 +9,13 @@ import { DashboardPage } from './pages/DashboardPage';
 import { AlertsPage } from './pages/AlertsPage';
 import { MyDataPage } from './pages/MyDataPage';
 import { PrivacyPage } from './pages/PrivacyPage';
+import { WorkspacePage } from './pages/WorkspacePage';
 
-function Shell({ children, requireSecurity = false }: { children: React.ReactElement; requireSecurity?: boolean }) {
+function Shell({ children, requireSecurity = false, requireWorkspace = false }: {
+  children: React.ReactElement; requireSecurity?: boolean; requireWorkspace?: boolean;
+}) {
   return (
-    <ProtectedRoute requireSecurity={requireSecurity}>
+    <ProtectedRoute requireSecurity={requireSecurity} requireWorkspace={requireWorkspace}>
       <Layout>{children}</Layout>
     </ProtectedRoute>
   );
@@ -25,6 +28,7 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/workspace" element={<Shell requireWorkspace><WorkspacePage /></Shell>} />
           <Route path="/dashboard" element={<Shell requireSecurity><DashboardPage /></Shell>} />
           <Route path="/alerts" element={<Shell requireSecurity><AlertsPage /></Shell>} />
           <Route path="/my-data" element={<Shell><MyDataPage /></Shell>} />

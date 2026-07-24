@@ -1,11 +1,12 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { useAuth, isSecurity } from '../auth/AuthContext';
+import { useAuth, isSecurity, isWorkspace } from '../auth/AuthContext';
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const security = isSecurity(user?.role);
+  const workspace = isWorkspace(user?.role);
 
   const link = (to: string, label: string) => (
     <NavLink
@@ -28,6 +29,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <div className="text-xs text-muted">Security Platform</div>
         </div>
         <nav className="space-y-1">
+          {workspace && link('/workspace', 'Workspace')}
           {security && link('/dashboard', 'Security Dashboard')}
           {security && link('/alerts', 'Alerts')}
           {link('/my-data', 'My Data')}

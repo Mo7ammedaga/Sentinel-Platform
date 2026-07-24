@@ -75,6 +75,15 @@ export interface Paginated<T> {
   pagination: { page: number; per_page: number; total: number; pages: number };
 }
 
+export interface Workspace { id: number; name: string; description: string | null; }
+export interface Project { id: number; workspace_id: number; name: string; description: string | null; }
+export interface Task {
+  id: number; project_id: number; title: string; description: string | null;
+  status: string; priority: string;
+}
+export interface Note { id: number; task_id: number; content: string; created_at: string; }
+export interface FileItem { id: number; task_id: number; filename: string; file_path: string; }
+
 export const INVESTIGATION_STATES = [
   'open',
   'assigned',
