@@ -1,7 +1,8 @@
 """Workspace REST API: projects, tasks, files, notes, messages.
 
-Thin routes only — parse the request, enforce RBAC, call the service, shape the
-response. All business logic and event emission live in workspace_service.
+Thin routes only — validate the body (pydantic), enforce RBAC, call the
+service, shape the response. All business logic and event emission live in
+workspace_service. Errors flow through the centralized handler.
 """
 from flask import Blueprint, request, jsonify
 
@@ -9,23 +10,18 @@ from app.services import workspace_service as ws
 from app.utils.auth import token_required
 from app.utils.decorators import role_required
 from app.utils.constants import WORKSPACE_ROLES
-from app.utils.api import paginate, paginated, require_fields
+from app.utils.api import paginate, paginated
+from app.utils.validation import validate_body, validated_data
+from app.schemas.workspace import (
+    WorkspaceCreate, ProjectCreate, ProjectUpdate, TaskCreate, TaskUpdate,
+    FileCreate, NoteCreate, NoteUpdate, MessageCreate,
+)
 
 workspace_bp = Blueprint('workspace', __name__, url_prefix='/api/v1')
 
 
-def _body():
-    return request.get_json(silent=True) or {}
-
-
-def _missing(data, *fields):
-    miss = require_fields(data, *fields)
-    if miss:
-        return jsonify({'error': 'Missing required fields', 'fields': miss}), 400
-    return None
-
-
 def _result(data, error, ok_code=200):
+    """Map a service (data, error) tuple to a JSON response."""
     if error:
         code = 400 if error.startswith('Missing') else 404
         return jsonify({'error': error}), code
@@ -36,12 +32,9 @@ def _result(data, error, ok_code=200):
 @workspace_bp.route('/workspaces', methods=['POST'])
 @token_required
 @role_required(*WORKSPACE_ROLES)
+@validate_body(WorkspaceCreate)
 def create_workspace():
-    data = _body()
-    bad = _missing(data, 'name')
-    if bad:
-        return bad
-    return _result(*ws.create_workspace(request.user_id, data), ok_code=201)
+    return _result(*ws.create_workspace(request.user_id, validated_data()), ok_code=201)
 
 
 @workspace_bp.route('/workspaces', methods=['GET'])
@@ -56,12 +49,9 @@ def list_workspaces():
 @workspace_bp.route('/projects', methods=['POST'])
 @token_required
 @role_required(*WORKSPACE_ROLES)
+@validate_body(ProjectCreate)
 def create_project():
-    data = _body()
-    bad = _missing(data, 'workspace_id', 'name')
-    if bad:
-        return bad
-    return _result(*ws.create_project(request.user_id, data), ok_code=201)
+    return _result(*ws.create_project(request.user_id, validated_data()), ok_code=201)
 
 
 @workspace_bp.route('/projects', methods=['GET'])
@@ -83,8 +73,9 @@ def get_project(project_id):
 @workspace_bp.route('/projects/<int:project_id>', methods=['PUT'])
 @token_required
 @role_required(*WORKSPACE_ROLES)
+@validate_body(ProjectUpdate)
 def update_project(project_id):
-    return _result(*ws.update_project(request.user_id, project_id, _body()))
+    return _result(*ws.update_project(request.user_id, project_id, validated_data()))
 
 
 @workspace_bp.route('/projects/<int:project_id>', methods=['DELETE'])
@@ -98,12 +89,9 @@ def delete_project(project_id):
 @workspace_bp.route('/tasks', methods=['POST'])
 @token_required
 @role_required(*WORKSPACE_ROLES)
+@validate_body(TaskCreate)
 def create_task():
-    data = _body()
-    bad = _missing(data, 'project_id', 'title')
-    if bad:
-        return bad
-    return _result(*ws.create_task(request.user_id, data), ok_code=201)
+    return _result(*ws.create_task(request.user_id, validated_data()), ok_code=201)
 
 
 @workspace_bp.route('/tasks', methods=['GET'])
@@ -125,8 +113,9 @@ def get_task(task_id):
 @workspace_bp.route('/tasks/<int:task_id>', methods=['PUT'])
 @token_required
 @role_required(*WORKSPACE_ROLES)
+@validate_body(TaskUpdate)
 def update_task(task_id):
-    return _result(*ws.update_task(request.user_id, task_id, _body()))
+    return _result(*ws.update_task(request.user_id, task_id, validated_data()))
 
 
 @workspace_bp.route('/tasks/<int:task_id>', methods=['DELETE'])
@@ -140,12 +129,9 @@ def delete_task(task_id):
 @workspace_bp.route('/files', methods=['POST'])
 @token_required
 @role_required(*WORKSPACE_ROLES)
+@validate_body(FileCreate)
 def upload_file():
-    data = _body()
-    bad = _missing(data, 'task_id', 'filename', 'file_path')
-    if bad:
-        return bad
-    return _result(*ws.upload_file(request.user_id, data), ok_code=201)
+    return _result(*ws.upload_file(request.user_id, validated_data()), ok_code=201)
 
 
 @workspace_bp.route('/files', methods=['GET'])
@@ -175,12 +161,9 @@ def delete_file(file_id):
 @workspace_bp.route('/notes', methods=['POST'])
 @token_required
 @role_required(*WORKSPACE_ROLES)
+@validate_body(NoteCreate)
 def create_note():
-    data = _body()
-    bad = _missing(data, 'task_id', 'content')
-    if bad:
-        return bad
-    return _result(*ws.create_note(request.user_id, data), ok_code=201)
+    return _result(*ws.create_note(request.user_id, validated_data()), ok_code=201)
 
 
 @workspace_bp.route('/notes', methods=['GET'])
@@ -195,12 +178,9 @@ def list_notes():
 @workspace_bp.route('/notes/<int:note_id>', methods=['PUT'])
 @token_required
 @role_required(*WORKSPACE_ROLES)
+@validate_body(NoteUpdate)
 def update_note(note_id):
-    data = _body()
-    bad = _missing(data, 'content')
-    if bad:
-        return bad
-    return _result(*ws.update_note(request.user_id, note_id, data))
+    return _result(*ws.update_note(request.user_id, note_id, validated_data()))
 
 
 @workspace_bp.route('/notes/<int:note_id>', methods=['DELETE'])
@@ -214,12 +194,9 @@ def delete_note(note_id):
 @workspace_bp.route('/messages', methods=['POST'])
 @token_required
 @role_required(*WORKSPACE_ROLES)
+@validate_body(MessageCreate)
 def send_message():
-    data = _body()
-    bad = _missing(data, 'recipient_id', 'content')
-    if bad:
-        return bad
-    return _result(*ws.send_message(request.user_id, data), ok_code=201)
+    return _result(*ws.send_message(request.user_id, validated_data()), ok_code=201)
 
 
 @workspace_bp.route('/messages', methods=['GET'])

@@ -64,6 +64,13 @@
 > - **Interim note on multi-tenant:** listing is scoped where cheap (workspaces by
 >   org, messages by participant); strict per-org filtering on child entities is a
 >   follow-up (MVP is single-org).
+> - **B4/B5 (validation + errors):** chose **pydantic v2** over marshmallow (typed,
+>   Rust-backed core, structured per-field errors, framework-agnostic). Schemas in
+>   `app/schemas/`, `@validate_body` decorator (`app/utils/validation.py`) raising
+>   a shared `ApiError`. Centralized handlers (`app/middleware/error_handler.py`)
+>   give every failure one shape `{error, details?}` (validation 422, 404, 405,
+>   500). **Phase B is COMPLETE (B1-B6).** Next: rebuild migration baseline
+>   (the documented debt), then Phase C hardening.
 
 ## What This Is
 AI-powered cybersecurity monitoring platform. Monitors employee behavior in a

@@ -21,6 +21,10 @@ def create_app(config_class=DevelopmentConfig):
     from app.events.websocket import register_websocket_events
     register_websocket_events(socketio)
 
+    # Consistent JSON error responses across the whole API.
+    from app.middleware.error_handler import register_error_handlers
+    register_error_handlers(app)
+
     from app.routes.auth import auth_bp
     from app.routes.ai import ai_bp
     from app.routes.dashboard import dashboard_bp
