@@ -84,7 +84,7 @@ docker compose up --build            # backend :5000 + PostgreSQL 16
 |------|-----------|
 | Auth | `POST /auth/login`, `POST /auth/refresh`, `GET /auth/profile` |
 | AI | `POST /ai/analyze` (analyst/admin) |
-| Dashboard | `GET /dashboard/stats`, `/alerts`, `/users/<id>/activity` |
+| Dashboard | `GET /dashboard/stats`, `/recent-events`, `/users/<id>/activity` |
 | Security | `GET /security/alerts`, `/high-risk-users`; `POST /security/alerts/<id>/investigations`; `PATCH /security/investigations/<id>` |
 | Workspace | CRUD for `workspaces`, `projects`, `tasks`, `files`, `notes`, `messages` (each mutation emits one Event) |
 | Privacy | `GET /privacy/notice`; `GET /me/events`, `/me/events/export` |
