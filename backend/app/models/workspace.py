@@ -59,8 +59,9 @@ class File(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     task_id = db.Column(db.Integer, db.ForeignKey('tasks.id'), nullable=False)
-    filename = db.Column(db.String(255), nullable=False)
-    file_path = db.Column(db.String(500), nullable=False)
+    filename = db.Column(db.String(255), nullable=False)      # original name, for display
+    file_path = db.Column(db.String(500), nullable=False)     # stored name on disk (uuid-based)
+    size_bytes = db.Column(db.Integer)
     uploaded_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     

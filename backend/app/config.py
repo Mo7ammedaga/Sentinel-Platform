@@ -29,6 +29,12 @@ class Config:
     # Logging
     LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
 
+    # File uploads. UPLOAD_FOLDER is resolved relative to the Flask instance
+    # path (backend/instance/uploads) inside create_app() — instance/ is already
+    # gitignored, so uploaded files never get committed. 25MB cap (doc 12 allows
+    # up to 100MB; 25MB is a sane default for a demo deployment).
+    MAX_CONTENT_LENGTH = int(os.environ.get('MAX_UPLOAD_MB', '25')) * 1024 * 1024
+
 
 class DevelopmentConfig(Config):
     """Development configuration"""
