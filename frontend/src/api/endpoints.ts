@@ -37,6 +37,7 @@ export const authApi = {
     api.get<{ sessions: Session[] }>('/auth/sessions').then((r) => r.data.sessions),
   revokeSession: (id: number) =>
     api.delete(`/auth/sessions/${id}`).then((r) => r.data),
+  logout: () => api.post('/auth/logout').then((r) => r.data),
 };
 
 export const securityApi = {

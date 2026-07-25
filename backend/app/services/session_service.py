@@ -95,3 +95,15 @@ def revoke_session(user_id, session_id):
     session.revoked_at = datetime.utcnow()
     db.session.commit()
     return True, None
+
+
+def revoke_current_session(user_id, jti):
+    """Called on logout: revoke the session tied to the access token's own
+    sid, so the matching refresh token stops working too — logout is a real
+    server-side sign-out, not just deleting tokens client-side."""
+    if not jti:
+        return   # old tokens issued before sessions existed carry no jti
+    session = UserSession.query.filter_by(jti=jti, user_id=user_id).first()
+    if session is not None and session.revoked_at is None:
+        session.revoked_at = datetime.utcnow()
+        db.session.commit()

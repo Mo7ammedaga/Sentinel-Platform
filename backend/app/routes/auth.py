@@ -104,6 +104,16 @@ def login():
     }), 200
 
 
+@auth_bp.route('/logout', methods=['POST'])
+@token_required
+def logout():
+    """Revoke the session this access token belongs to. The frontend also
+    clears its stored tokens; this is what makes that a real server-side
+    sign-out rather than just forgetting the tokens locally."""
+    session_service.revoke_current_session(request.user_id, request.sid)
+    return jsonify({'message': 'Logged out'}), 200
+
+
 @auth_bp.route('/refresh', methods=['POST'])
 @limiter.limit("20 per minute")
 def refresh():

@@ -43,6 +43,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(() => {
+    // Best-effort: revoke the session server-side too, so the refresh token
+    // this browser was holding stops working — not just a local token wipe.
+    // Fire-and-forget so a slow/failed request never blocks signing out.
+    authApi.logout().catch(() => {});
     tokenStore.clear();
     setUser(null);
   }, []);

@@ -74,6 +74,30 @@ def test_cannot_revoke_someone_elses_session(client, employee_headers):
     assert any(s['id'] == session_id for s in still_there)
 
 
+def test_logout_revokes_the_current_session(client):
+    """Logout must be a real server-side sign-out — not just deleting tokens
+    client-side — otherwise a leaked refresh token stays valid forever."""
+    tokens = _login(client).get_json()
+    headers = {'Authorization': f"Bearer {tokens['access_token']}"}
+
+    out = client.post('/api/v1/auth/logout', headers=headers)
+    assert out.status_code == 200
+
+    refreshed = client.post('/api/v1/auth/refresh',
+                            json={'refresh_token': tokens['refresh_token']})
+    assert refreshed.status_code == 401
+
+
+def test_logout_without_a_session_jti_is_a_safe_no_op(client, app):
+    """A legacy access token with no sid must not error on logout."""
+    with app.app_context():
+        uid = user_id('manager@test.local')
+        legacy_access = TokenManager.generate_token(uid, 'manager@test.local', 'manager')
+    headers = {'Authorization': f'Bearer {legacy_access}'}
+    r = client.post('/api/v1/auth/logout', headers=headers)
+    assert r.status_code == 200
+
+
 def test_refresh_still_works_for_tokens_issued_before_this_feature(client, app):
     """Backward compatibility: a refresh token with no 'jti' (as every token
     was, before session tracking existed) must keep working."""
