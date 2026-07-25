@@ -48,6 +48,25 @@ export interface Investigation {
   closed_at: string | null;
 }
 
+export interface ModelVersionPerformance {
+  model_version: string;
+  confirmed: number;
+  false_positive: number;
+  total_reviewed: number;
+  confirmed_rate: number | null;
+}
+export interface ModelPerformance {
+  overall: {
+    total_reviewed: number; confirmed: number; false_positive: number;
+    confirmed_rate: number | null;
+  };
+  by_model_version: ModelVersionPerformance[];
+}
+
+export interface RiskTrendPoint {
+  date: string; avg_risk: number; critical: number; suspicious: number;
+}
+
 export interface BaselineCoverage {
   user_id: number;
   email: string;

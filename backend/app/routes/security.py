@@ -39,6 +39,26 @@ def baseline_coverage():
     return jsonify({'users': security_service.baseline_coverage(org)}), 200
 
 
+@security_bp.route('/model-performance', methods=['GET'])
+@token_required
+@role_required(*SECURITY_ROLES)
+def model_performance():
+    """The analyst feedback loop: confirmed vs false-positive verdicts,
+    grouped by the model version that raised each alert."""
+    org = current_user().organization_id
+    return jsonify(security_service.model_performance(org)), 200
+
+
+@security_bp.route('/risk-trend', methods=['GET'])
+@token_required
+@role_required(*SECURITY_ROLES)
+def risk_trend():
+    """Daily average risk + critical/suspicious counts over the last N days."""
+    org = current_user().organization_id
+    days = request.args.get('days', 14, type=int)
+    return jsonify({'days': days, 'trend': security_service.risk_trend(org, days)}), 200
+
+
 @security_bp.route('/alerts/<int:alert_id>/investigations', methods=['POST'])
 @token_required
 @role_required(*SECURITY_ROLES)

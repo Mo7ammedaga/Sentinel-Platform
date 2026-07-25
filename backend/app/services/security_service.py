@@ -3,7 +3,9 @@
 Orchestrates the AI analysis pipeline and the alert -> investigation workflow.
 Routes call these functions; they never talk to the AI engine or models directly.
 """
-from datetime import datetime
+from datetime import datetime, timedelta
+
+from sqlalchemy import func, case
 
 from app.extensions import db
 from app.models import (
@@ -196,6 +198,80 @@ def baseline_coverage(org_id):
     } for u in users]
     result.sort(key=lambda r: r['event_count'])
     return result
+
+
+def model_performance(org_id):
+    """The analyst feedback loop, made visible: for every alert an analyst has
+    reached a final verdict on (confirmed / false_positive), compare that
+    verdict against the model version that raised it. This is how the AI's
+    real-world accuracy is tracked over time -- an analyst's own investigation
+    outcomes ARE the feedback; nothing new to log, we just surface it.
+    """
+    rows = (
+        db.session.query(Investigation.state, AIAnalysis.model_version)
+        .join(Alert, Investigation.alert_id == Alert.id)
+        .outerjoin(AIAnalysis, Alert.ai_analysis_id == AIAnalysis.id)
+        .filter(Investigation.organization_id == org_id,
+                Investigation.state.in_(
+                    [InvestigationState.CONFIRMED, InvestigationState.FALSE_POSITIVE]))
+        .all()
+    )
+    by_version = {}
+    for state, version in rows:
+        v = by_version.setdefault(version or 'unknown',
+                                  {'confirmed': 0, 'false_positive': 0})
+        key = 'confirmed' if state == InvestigationState.CONFIRMED else 'false_positive'
+        v[key] += 1
+
+    by_model_version = []
+    for version, counts in sorted(by_version.items()):
+        total = counts['confirmed'] + counts['false_positive']
+        by_model_version.append({
+            'model_version': version,
+            'confirmed': counts['confirmed'],
+            'false_positive': counts['false_positive'],
+            'total_reviewed': total,
+            'confirmed_rate': round(counts['confirmed'] / total, 3) if total else None,
+        })
+
+    total_confirmed = sum(v['confirmed'] for v in by_version.values())
+    total_fp = sum(v['false_positive'] for v in by_version.values())
+    total = total_confirmed + total_fp
+    overall = {
+        'total_reviewed': total,
+        'confirmed': total_confirmed,
+        'false_positive': total_fp,
+        'confirmed_rate': round(total_confirmed / total, 3) if total else None,
+    }
+    return {'overall': overall, 'by_model_version': by_model_version}
+
+
+def risk_trend(org_id, days=14):
+    """Daily risk trend: average AI risk score and critical/suspicious counts,
+    bucketed by the day the EVENT happened (not when it was analyzed) so the
+    chart reflects real behaviour timing, not when 'Run analysis' was clicked.
+    """
+    cutoff = datetime.utcnow() - timedelta(days=days)
+    day = func.date(Event.created_at)
+    rows = (
+        db.session.query(
+            day.label('day'),
+            func.avg(AIAnalysis.risk_score).label('avg_risk'),
+            func.sum(case((AIAnalysis.status == 'critical', 1), else_=0)).label('critical'),
+            func.sum(case((AIAnalysis.status == 'suspicious', 1), else_=0)).label('suspicious'),
+        )
+        .join(Event, AIAnalysis.event_id == Event.id)
+        .filter(AIAnalysis.organization_id == org_id, Event.created_at >= cutoff)
+        .group_by(day)
+        .order_by(day)
+        .all()
+    )
+    return [{
+        'date': str(r.day),
+        'avg_risk': round(r.avg_risk, 1) if r.avg_risk is not None else 0,
+        'critical': int(r.critical or 0),
+        'suspicious': int(r.suspicious or 0),
+    } for r in rows]
 
 
 def high_risk_users(limit=20):

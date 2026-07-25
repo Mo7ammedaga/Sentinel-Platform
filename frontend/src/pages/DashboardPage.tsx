@@ -3,14 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import { securityApi } from '../api/endpoints';
 import { apiError } from '../api/client';
 import { useLiveAlerts } from '../hooks/useLiveAlerts';
-import { DashboardStats, HighRiskUser, BaselineCoverage } from '../types';
+import { DashboardStats, HighRiskUser, BaselineCoverage, ModelPerformance, RiskTrendPoint } from '../types';
 import { Card, StatCard, Badge, Spinner, ErrorNote, EmptyState } from '../components/ui';
+import { RiskTrendChart } from '../components/RiskTrendChart';
 
 export function DashboardPage() {
   const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [highRisk, setHighRisk] = useState<HighRiskUser[]>([]);
   const [coverage, setCoverage] = useState<BaselineCoverage[]>([]);
+  const [perf, setPerf] = useState<ModelPerformance | null>(null);
+  const [trend, setTrend] = useState<RiskTrendPoint[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
@@ -19,14 +22,18 @@ export function DashboardPage() {
   const load = useCallback(async () => {
     setError('');
     try {
-      const [s, hr, cov] = await Promise.all([
+      const [s, hr, cov, mp, rt] = await Promise.all([
         securityApi.stats(),
         securityApi.highRiskUsers(),
         securityApi.baselineCoverage(),
+        securityApi.modelPerformance(),
+        securityApi.riskTrend(14),
       ]);
       setStats(s);
       setHighRisk(hr);
       setCoverage(cov);
+      setPerf(mp);
+      setTrend(rt);
     } catch (e) {
       setError(apiError(e));
     } finally {
@@ -88,6 +95,11 @@ export function DashboardPage() {
         </div>
       )}
 
+      <Card>
+        <h2 className="mb-3 text-sm font-semibold text-slate-200">Risk Trend (14 days)</h2>
+        <RiskTrendChart data={trend} />
+      </Card>
+
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <h2 className="mb-3 text-sm font-semibold text-slate-200">High-Risk Users</h2>
@@ -134,47 +146,89 @@ export function DashboardPage() {
         </Card>
       </div>
 
-      <Card>
-        <h2 className="mb-1 text-sm font-semibold text-slate-200">Monitoring Coverage</h2>
-        <p className="mb-3 text-xs text-muted">
-          The AI needs at least {coverage[0]?.required ?? 50} events to build a reliable
-          baseline for someone. Below that, they will never appear in Alerts — not because
-          they're "normal", but because there isn't enough history to judge yet.
-        </p>
-        {coverage.length === 0 ? (
-          <EmptyState message="No users to show." />
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="text-left text-xs uppercase text-muted">
-              <tr><th className="py-1">User</th><th>Role</th><th>Baseline</th><th>Status</th></tr>
-            </thead>
-            <tbody>
-              {coverage.map((u) => (
-                <tr key={u.user_id} className="border-t border-slate-800">
-                  <td className="py-2">{u.name}</td>
-                  <td className="capitalize text-muted">{u.role}</td>
-                  <td className="w-40">
-                    <div className="flex items-center gap-2">
-                      <div className="h-1.5 flex-1 rounded-full bg-slate-800">
-                        <div
-                          className={`h-1.5 rounded-full ${u.ready ? 'bg-emerald-500' : 'bg-accent'}`}
-                          style={{ width: `${Math.min(100, (u.event_count / u.required) * 100)}%` }}
-                        />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <h2 className="mb-1 text-sm font-semibold text-slate-200">Model Performance</h2>
+          <p className="mb-3 text-xs text-muted">
+            The analyst feedback loop: how investigation verdicts compare to what the
+            AI flagged. This is the real measure of accuracy — not the model's own confidence.
+          </p>
+          {!perf || perf.overall.total_reviewed === 0 ? (
+            <EmptyState message="No investigations closed yet — confirm or dismiss an alert to start tracking accuracy." />
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center gap-4">
+                <div>
+                  <div className="text-2xl font-semibold text-slate-100">
+                    {Math.round((perf.overall.confirmed_rate ?? 0) * 100)}%
+                  </div>
+                  <div className="text-xs text-muted">confirmed of {perf.overall.total_reviewed} reviewed</div>
+                </div>
+                <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-800">
+                  <div className="h-2 bg-emerald-500"
+                       style={{ width: `${(perf.overall.confirmed_rate ?? 0) * 100}%` }} />
+                </div>
+              </div>
+              <table className="w-full text-sm">
+                <thead className="text-left text-xs uppercase text-muted">
+                  <tr><th className="py-1">Model version</th><th>Confirmed</th><th>False positive</th></tr>
+                </thead>
+                <tbody>
+                  {perf.by_model_version.map((v) => (
+                    <tr key={v.model_version} className="border-t border-slate-800">
+                      <td className="py-2 font-mono text-xs text-slate-300">{v.model_version}</td>
+                      <td className="text-emerald-400">{v.confirmed}</td>
+                      <td className="text-red-400">{v.false_positive}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+
+        <Card>
+          <h2 className="mb-1 text-sm font-semibold text-slate-200">Monitoring Coverage</h2>
+          <p className="mb-3 text-xs text-muted">
+            The AI needs at least {coverage[0]?.required ?? 50} events to build a reliable
+            baseline for someone. Below that, they will never appear in Alerts — not because
+            they're "normal", but because there isn't enough history to judge yet.
+          </p>
+          {coverage.length === 0 ? (
+            <EmptyState message="No users to show." />
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="text-left text-xs uppercase text-muted">
+                <tr><th className="py-1">User</th><th>Role</th><th>Baseline</th><th>Status</th></tr>
+              </thead>
+              <tbody>
+                {coverage.map((u) => (
+                  <tr key={u.user_id} className="border-t border-slate-800">
+                    <td className="py-2">{u.name}</td>
+                    <td className="capitalize text-muted">{u.role}</td>
+                    <td className="w-40">
+                      <div className="flex items-center gap-2">
+                        <div className="h-1.5 flex-1 rounded-full bg-slate-800">
+                          <div
+                            className={`h-1.5 rounded-full ${u.ready ? 'bg-emerald-500' : 'bg-accent'}`}
+                            style={{ width: `${Math.min(100, (u.event_count / u.required) * 100)}%` }}
+                          />
+                        </div>
+                        <span className="text-xs text-slate-400">{u.event_count}/{u.required}</span>
                       </div>
-                      <span className="text-xs text-slate-400">{u.event_count}/{u.required}</span>
-                    </div>
-                  </td>
-                  <td>
-                    {u.ready
-                      ? <span className="rounded border border-emerald-500/30 bg-emerald-500/15 px-2 py-0.5 text-xs text-emerald-400">being monitored</span>
-                      : <span className="rounded border border-slate-700 px-2 py-0.5 text-xs text-slate-400">collecting baseline</span>}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </Card>
+                    </td>
+                    <td>
+                      {u.ready
+                        ? <span className="rounded border border-emerald-500/30 bg-emerald-500/15 px-2 py-0.5 text-xs text-emerald-400">being monitored</span>
+                        : <span className="rounded border border-slate-700 px-2 py-0.5 text-xs text-slate-400">collecting baseline</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </Card>
+      </div>
     </div>
   );
 }

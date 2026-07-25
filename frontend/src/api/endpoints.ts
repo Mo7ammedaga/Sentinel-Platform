@@ -3,6 +3,7 @@ import {
   Alert, DashboardStats, HighRiskUser, Investigation, Paginated, User, UserEvent,
   Workspace, Project, Task, Note, FileItem, DirectoryUser, Message,
   AppNotification, SearchResults, ManagedUser, Role, BaselineCoverage, FullProfile,
+  ModelPerformance, RiskTrendPoint,
 } from '../types';
 
 interface AuthResponse { access_token: string; refresh_token: string; user: User; }
@@ -43,6 +44,11 @@ export const securityApi = {
     api.get<{ users: HighRiskUser[] }>('/security/high-risk-users').then((r) => r.data.users),
   baselineCoverage: () =>
     api.get<{ users: BaselineCoverage[] }>('/security/baseline-coverage').then((r) => r.data.users),
+  modelPerformance: () =>
+    api.get<ModelPerformance>('/security/model-performance').then((r) => r.data),
+  riskTrend: (days = 14) =>
+    api.get<{ days: number; trend: RiskTrendPoint[] }>('/security/risk-trend', { params: { days } })
+      .then((r) => r.data.trend),
   openInvestigation: (alertId: number) =>
     api.post<Investigation>(`/security/alerts/${alertId}/investigations`).then((r) => r.data),
   updateInvestigation: (id: number, state: string, notes?: string) =>
