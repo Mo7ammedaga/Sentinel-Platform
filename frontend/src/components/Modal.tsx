@@ -33,12 +33,12 @@ export function Modal({ open, onClose, title, children, footer, size = 'md' }: {
           size === 'lg' ? 'max-w-2xl' : 'max-w-md'
         }`}
       >
-        <div className="flex items-center justify-between border-b border-surface-800 px-5 py-4">
-          <h2 className="text-sm font-semibold text-surface-100">{title}</h2>
+        <div className="flex items-center justify-between gap-3 border-b border-surface-800 px-5 py-4">
+          <h2 className="min-w-0 truncate text-sm font-semibold text-surface-100">{title}</h2>
           <button
             onClick={onClose}
             aria-label="Close"
-            className="rounded-md p-1 text-surface-500 transition-colors hover:bg-surface-800 hover:text-surface-200"
+            className="shrink-0 rounded-md p-1 text-surface-500 transition-colors hover:bg-surface-800 hover:text-surface-200"
           >
             <X className="h-4 w-4" />
           </button>

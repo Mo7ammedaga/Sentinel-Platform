@@ -74,15 +74,17 @@ export function ChatPage() {
   if (loading) return <div className="grid gap-4 lg:grid-cols-[260px_1fr]"><CardSkeleton /><CardSkeleton rows={5} /></div>;
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] flex-col space-y-4">
+    <div className="flex flex-col space-y-4 lg:h-[calc(100vh-8rem)]">
       <div>
         <h1 className="text-xl font-semibold text-white">Team Chat</h1>
         <p className="text-sm text-surface-500">Direct messages with colleagues. Sending and reading are recorded as events.</p>
       </div>
       {error && <p className="text-sm text-danger-400">{error}</p>}
 
-      <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[260px_1fr]">
-        <Card className="flex flex-col overflow-hidden !p-0">
+      {/* Below lg the two panels stack — each needs its own bounded height
+          so internal scrolling still works without a fixed-height parent. */}
+      <div className="grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-[260px_1fr]">
+        <Card className="flex h-64 flex-col overflow-hidden !p-0 lg:h-auto">
           <h2 className="border-b border-surface-800 px-4 py-3 text-sm font-semibold text-surface-200">Colleagues</h2>
           {people.length === 0 ? (
             <EmptyState message="No colleagues yet." />
@@ -108,7 +110,7 @@ export function ChatPage() {
           )}
         </Card>
 
-        <Card className="flex min-h-0 flex-col !p-0">
+        <Card className="flex h-[28rem] min-h-0 flex-col !p-0 lg:h-auto">
           {!active ? (
             <div className="flex flex-1 items-center justify-center">
               <p className="text-sm text-surface-500">Select a colleague to start chatting.</p>

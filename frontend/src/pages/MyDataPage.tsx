@@ -59,21 +59,23 @@ export function MyDataPage() {
         <EmptyState message="No events recorded yet." icon={Lock} />
       ) : (
         <Card className="!p-0 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="border-b border-surface-800 text-left text-xs uppercase text-surface-600">
-              <tr><th className="px-4 py-3">Action</th><th>Resource</th><th>Status</th><th>When</th></tr>
-            </thead>
-            <tbody>
-              {events.map((e) => (
-                <tr key={e.id} className="border-t border-surface-800 hover:bg-surface-800/30">
-                  <td className="px-4 py-2.5 text-surface-200">{e.action_type.replace(/_/g, ' ')}</td>
-                  <td className="text-surface-500">{e.resource_type}</td>
-                  <td><Badge status={e.status} /></td>
-                  <td className="text-surface-500">{new Date(e.created_at).toLocaleString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="border-b border-surface-800 text-left text-xs uppercase text-surface-600">
+                <tr><th className="px-4 py-3">Action</th><th>Resource</th><th>Status</th><th>When</th></tr>
+              </thead>
+              <tbody>
+                {events.map((e) => (
+                  <tr key={e.id} className="border-t border-surface-800 hover:bg-surface-800/30">
+                    <td className="whitespace-nowrap px-4 py-2.5 text-surface-200">{e.action_type.replace(/_/g, ' ')}</td>
+                    <td className="whitespace-nowrap text-surface-500">{e.resource_type}</td>
+                    <td className="whitespace-nowrap"><Badge status={e.status} /></td>
+                    <td className="whitespace-nowrap text-surface-500">{new Date(e.created_at).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           <div className="flex items-center justify-between border-t border-surface-800 px-4 py-3 text-xs text-surface-500">
             <Button size="sm" variant="secondary" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}
                     icon={<ChevronLeft className="h-3 w-3" />}>

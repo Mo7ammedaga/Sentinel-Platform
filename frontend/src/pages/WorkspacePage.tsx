@@ -38,7 +38,9 @@ function TaskCard({ task, onOpen, onMove, onDelete }: {
         <div className="text-sm text-surface-200">{task.title}</div>
         <div className={`mt-1.5 text-[10px] font-medium uppercase tracking-wide ${PRIORITY_TAG[task.priority]}`}>{task.priority}</div>
       </button>
-      <div className="mt-2 hidden items-center justify-between gap-1 group-hover:flex">
+      {/* Always visible on touch (no hover state exists there); hover-reveal
+          is a desktop-only declutter, not the only way to reach these. */}
+      <div className="mt-2 flex items-center justify-between gap-1 md:hidden md:group-hover:flex">
         <button disabled={idx <= 0} onClick={() => onMove(-1)}
                 className="rounded p-1 text-surface-500 hover:bg-surface-800 hover:text-surface-200 disabled:opacity-0">
           <ArrowLeft className="h-3.5 w-3.5" />
@@ -173,7 +175,7 @@ export function WorkspacePage() {
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); setConfirmDeleteProject(p); }}
-                  className="absolute right-3 top-3 hidden rounded p-1 text-surface-600 hover:bg-danger-500/20 hover:text-danger-400 group-hover:block"
+                  className="absolute right-3 top-3 rounded p-1 text-surface-600 hover:bg-danger-500/20 hover:text-danger-400 md:hidden md:group-hover:block"
                 >
                   <MoreHorizontal className="h-4 w-4" />
                 </button>
