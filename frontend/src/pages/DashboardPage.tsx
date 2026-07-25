@@ -1,11 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { securityApi } from '../api/endpoints';
 import { apiError } from '../api/client';
 import { useLiveAlerts } from '../hooks/useLiveAlerts';
 import { DashboardStats, HighRiskUser, BaselineCoverage } from '../types';
-import { Card, StatCard, Badge, Spinner, ErrorNote } from '../components/ui';
+import { Card, StatCard, Badge, Spinner, ErrorNote, EmptyState } from '../components/ui';
 
 export function DashboardPage() {
+  const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [highRisk, setHighRisk] = useState<HighRiskUser[]>([]);
   const [coverage, setCoverage] = useState<BaselineCoverage[]>([]);
@@ -50,7 +52,7 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-white">Security Dashboard</h1>
           <p className="text-sm text-muted">
@@ -59,8 +61,9 @@ export function DashboardPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <span className={`text-xs ${connected ? 'text-emerald-400' : 'text-muted'}`}>
-            ● {connected ? 'Live' : 'Offline'}
+          <span className={`flex items-center gap-1.5 text-xs ${connected ? 'text-emerald-400' : 'text-muted'}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${connected ? 'bg-emerald-400' : 'bg-slate-600'}`} />
+            {connected ? 'Live' : 'Offline'}
           </span>
           <button
             onClick={runAnalysis}
@@ -77,8 +80,10 @@ export function DashboardPage() {
       {stats && (
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <StatCard label="Events (24h)" value={stats.total_events} tone="total" />
-          <StatCard label="Critical" value={stats.critical} tone="critical" />
-          <StatCard label="Suspicious" value={stats.suspicious} tone="suspicious" />
+          <StatCard label="Critical" value={stats.critical} tone="critical"
+                    onClick={stats.critical > 0 ? () => navigate('/alerts?severity=critical') : undefined} />
+          <StatCard label="Suspicious" value={stats.suspicious} tone="suspicious"
+                    onClick={stats.suspicious > 0 ? () => navigate('/alerts?severity=suspicious') : undefined} />
           <StatCard label="Normal" value={stats.normal} tone="normal" />
         </div>
       )}
@@ -87,7 +92,7 @@ export function DashboardPage() {
         <Card>
           <h2 className="mb-3 text-sm font-semibold text-slate-200">High-Risk Users</h2>
           {highRisk.length === 0 ? (
-            <p className="text-sm text-muted">No elevated risk right now.</p>
+            <EmptyState message="No elevated risk right now." />
           ) : (
             <table className="w-full text-sm">
               <thead className="text-left text-xs uppercase text-muted">
@@ -109,16 +114,19 @@ export function DashboardPage() {
         <Card>
           <h2 className="mb-3 text-sm font-semibold text-slate-200">Live Alerts</h2>
           {alerts.length === 0 ? (
-            <p className="text-sm text-muted">Waiting for new alerts… (run analysis to generate)</p>
+            <EmptyState message="Waiting for new alerts… (run analysis to generate)" />
           ) : (
-            <ul className="space-y-2 max-h-80 overflow-y-auto">
-              {alerts.map((a, i) => (
-                <li key={`${a.event_id}-${i}`} className="rounded border border-slate-800 p-2">
-                  <div className="flex items-center justify-between">
+            <ul className="max-h-80 space-y-2 overflow-y-auto">
+              {alerts.map((a) => (
+                <li key={a.event_id} className="rounded border border-slate-800 p-2">
+                  <div className="flex items-center justify-between gap-2">
                     <span className="text-sm text-slate-200">{a.message}</span>
                     <Badge status={a.status} />
                   </div>
                   <div className="mt-1 text-xs text-muted">{a.explanation}</div>
+                  <div className="mt-1 text-xs text-slate-600">
+                    {new Date(a.timestamp).toLocaleTimeString()}
+                  </div>
                 </li>
               ))}
             </ul>
@@ -134,26 +142,32 @@ export function DashboardPage() {
           they're "normal", but because there isn't enough history to judge yet.
         </p>
         {coverage.length === 0 ? (
-          <p className="text-sm text-muted">No users to show.</p>
+          <EmptyState message="No users to show." />
         ) : (
           <table className="w-full text-sm">
             <thead className="text-left text-xs uppercase text-muted">
-              <tr><th className="py-1">User</th><th>Role</th><th>Events</th><th>Status</th></tr>
+              <tr><th className="py-1">User</th><th>Role</th><th>Baseline</th><th>Status</th></tr>
             </thead>
             <tbody>
               {coverage.map((u) => (
                 <tr key={u.user_id} className="border-t border-slate-800">
                   <td className="py-2">{u.name}</td>
-                  <td className="text-muted capitalize">{u.role}</td>
-                  <td className="text-slate-300">{u.event_count} / {u.required}</td>
+                  <td className="capitalize text-muted">{u.role}</td>
+                  <td className="w-40">
+                    <div className="flex items-center gap-2">
+                      <div className="h-1.5 flex-1 rounded-full bg-slate-800">
+                        <div
+                          className={`h-1.5 rounded-full ${u.ready ? 'bg-emerald-500' : 'bg-accent'}`}
+                          style={{ width: `${Math.min(100, (u.event_count / u.required) * 100)}%` }}
+                        />
+                      </div>
+                      <span className="text-xs text-slate-400">{u.event_count}/{u.required}</span>
+                    </div>
+                  </td>
                   <td>
                     {u.ready
-                      ? <span className="rounded border border-emerald-500/30 bg-emerald-500/15 px-2 py-0.5 text-xs text-emerald-400">
-                          being monitored
-                        </span>
-                      : <span className="rounded border border-slate-700 px-2 py-0.5 text-xs text-slate-400">
-                          collecting baseline
-                        </span>}
+                      ? <span className="rounded border border-emerald-500/30 bg-emerald-500/15 px-2 py-0.5 text-xs text-emerald-400">being monitored</span>
+                      : <span className="rounded border border-slate-700 px-2 py-0.5 text-xs text-slate-400">collecting baseline</span>}
                   </td>
                 </tr>
               ))}

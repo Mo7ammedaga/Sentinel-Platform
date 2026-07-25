@@ -10,6 +10,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const workspace = isWorkspace(user?.role);
   const admin = isAdmin(user?.role);
   const [unread, setUnread] = useState(0);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -22,6 +23,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const link = (to: string, label: string) => (
     <NavLink
       to={to}
+      onClick={() => setSidebarOpen(false)}
       className={({ isActive }) =>
         `block rounded px-3 py-2 text-sm ${
           isActive ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'
@@ -34,7 +36,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-full">
-      <aside className="w-56 shrink-0 border-r border-slate-800 bg-slate-900/40 p-4">
+      {sidebarOpen && (
+        <button
+          aria-label="Close menu"
+          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 z-20 bg-black/50 md:hidden"
+        />
+      )}
+
+      <aside
+        className={`fixed inset-y-0 left-0 z-30 w-56 shrink-0 border-r border-slate-800 bg-slate-950 p-4 transition-transform md:static md:translate-x-0 ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
         <div className="mb-6 px-2">
           <div className="text-lg font-semibold text-white">Sentinel</div>
           <div className="text-xs text-muted">Security Platform</div>
@@ -43,11 +57,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
           {workspace && link('/workspace', 'Workspace')}
           {workspace && link('/chat', 'Team Chat')}
           {workspace && link('/search', 'Search')}
-          <NavLink to="/notifications"
+          <NavLink
+            to="/notifications"
+            onClick={() => setSidebarOpen(false)}
             className={({ isActive }) =>
               `flex items-center justify-between rounded px-3 py-2 text-sm ${
                 isActive ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'
-              }`}>
+              }`
+            }
+          >
             <span>Notifications</span>
             {unread > 0 && (
               <span className="rounded-full bg-critical px-1.5 py-0.5 text-[10px] font-semibold text-white">
@@ -64,9 +82,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="flex-1">
-        <header className="flex items-center justify-between border-b border-slate-800 px-6 py-3">
-          <div className="text-sm text-muted">
-            {user?.name} · <span className="capitalize">{user?.role}</span>
+        <header className="flex items-center justify-between border-b border-slate-800 px-4 py-3 md:px-6">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Open menu"
+              className="rounded border border-slate-700 p-2 text-slate-300 md:hidden"
+            >
+              <span className="block h-0.5 w-4 bg-current" />
+              <span className="my-1 block h-0.5 w-4 bg-current" />
+              <span className="block h-0.5 w-4 bg-current" />
+            </button>
+            <div className="text-sm text-muted">
+              {user?.name} · <span className="capitalize">{user?.role}</span>
+            </div>
           </div>
           <button
             onClick={() => {
@@ -78,7 +107,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             Sign out
           </button>
         </header>
-        <main className="p-6">{children}</main>
+        <main className="p-4 md:p-6">{children}</main>
       </div>
     </div>
   );

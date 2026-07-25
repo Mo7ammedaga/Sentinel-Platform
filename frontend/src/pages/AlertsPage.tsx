@@ -1,10 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { securityApi } from '../api/endpoints';
 import { apiError } from '../api/client';
 import { Alert, INVESTIGATION_STATES } from '../types';
-import { Card, Badge, Spinner, ErrorNote } from '../components/ui';
+import { Card, Badge, Spinner, ErrorNote, EmptyState } from '../components/ui';
 
 export function AlertsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -12,6 +14,7 @@ export function AlertsPage() {
   const [investigationId, setInvestigationId] = useState<number | null>(null);
   const [notes, setNotes] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const severityFilter = searchParams.get('severity') || '';
 
   const load = useCallback(async () => {
     setError('');
@@ -51,34 +54,56 @@ export function AlertsPage() {
     }
   };
 
+  const setSeverity = (v: string) => setSearchParams(v ? { severity: v } : {});
+  const visible = severityFilter ? alerts.filter((a) => a.severity === severityFilter) : alerts;
+
   if (loading) return <Spinner />;
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-white">Alerts</h1>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="rounded border border-slate-700 bg-slate-800 px-2 py-1 text-sm text-slate-200"
-        >
-          <option value="">All</option>
-          <option value="open">Open</option>
-          <option value="investigating">Investigating</option>
-          <option value="closed">Closed</option>
-        </select>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-semibold text-white">Alerts</h1>
+          {severityFilter && (
+            <p className="text-xs text-muted">
+              Showing <span className="capitalize text-slate-300">{severityFilter}</span> only ·{' '}
+              <button onClick={() => setSeverity('')} className="text-accent">clear</button>
+            </p>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <select
+            value={severityFilter}
+            onChange={(e) => setSeverity(e.target.value)}
+            className="rounded border border-slate-700 bg-slate-800 px-2 py-1 text-sm text-slate-200"
+          >
+            <option value="">All severities</option>
+            <option value="critical">Critical</option>
+            <option value="suspicious">Suspicious</option>
+          </select>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="rounded border border-slate-700 bg-slate-800 px-2 py-1 text-sm text-slate-200"
+          >
+            <option value="">All statuses</option>
+            <option value="open">Open</option>
+            <option value="investigating">Investigating</option>
+            <option value="closed">Closed</option>
+          </select>
+        </div>
       </div>
 
       {error && <ErrorNote message={error} />}
 
-      {alerts.length === 0 ? (
-        <p className="text-sm text-muted">No alerts.</p>
+      {visible.length === 0 ? (
+        <EmptyState message="No alerts match this filter." />
       ) : (
         <div className="space-y-2">
-          {alerts.map((a) => (
+          {visible.map((a) => (
             <Card key={a.id} className="flex items-start justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="text-sm font-medium text-slate-100">
                     {a.user_name || `User #${a.user_id}`}
                   </span>

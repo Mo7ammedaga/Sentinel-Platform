@@ -29,7 +29,8 @@ export function useLiveAlerts(enabled: boolean) {
       // The join ack reuses the 'alert' event with status 'success' — ignore it.
       if ((data as { status?: string }).status === 'success') return;
       if (!data || !data.explanation) return;
-      setAlerts((prev) => [data, ...prev].slice(0, 50));
+      // Re-running analysis re-emits the same event_id — replace, don't duplicate.
+      setAlerts((prev) => [data, ...prev.filter((a) => a.event_id !== data.event_id)].slice(0, 50));
     });
 
     return () => {

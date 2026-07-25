@@ -2,14 +2,28 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { workspaceApi } from '../api/endpoints';
 import { apiError } from '../api/client';
 import { Project, Task, Note, FileItem } from '../types';
-import { Card, Badge, Spinner, ErrorNote } from '../components/ui';
+import { Card, Spinner, ErrorNote, EmptyState } from '../components/ui';
 
 const input =
   'w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none focus:border-accent';
 const btn =
-  'rounded bg-accent px-3 py-1.5 text-sm font-medium text-white disabled:opacity-60';
+  'shrink-0 rounded bg-accent px-3 py-1.5 text-sm font-medium text-white disabled:opacity-60';
 const ghost =
   'rounded border border-slate-700 px-2.5 py-1 text-xs text-slate-200 hover:bg-slate-800';
+
+const PRIORITY_STYLE: Record<string, string> = {
+  low: 'border-slate-600 text-slate-400',
+  medium: 'border-amber-500/40 text-amber-400',
+  high: 'border-red-500/40 text-red-400',
+};
+
+function PriorityTag({ priority }: { priority: string }) {
+  return (
+    <span className={`shrink-0 rounded border px-1.5 py-0.5 text-[10px] uppercase tracking-wide ${PRIORITY_STYLE[priority] || PRIORITY_STYLE.low}`}>
+      {priority}
+    </span>
+  );
+}
 
 function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`;
@@ -34,7 +48,6 @@ export function WorkspacePage() {
 
   const fail = (e: unknown) => setError(apiError(e));
 
-  // Bootstrap: ensure a workspace exists, then load projects.
   const boot = useCallback(async () => {
     try {
       let ws = await workspaceApi.listWorkspaces();
@@ -112,6 +125,9 @@ export function WorkspacePage() {
 
   if (loading) return <Spinner />;
 
+  const openTasks = tasks.filter((t) => t.status !== 'completed');
+  const doneTasks = tasks.filter((t) => t.status === 'completed');
+
   return (
     <div className="space-y-4">
       <div>
@@ -120,87 +136,129 @@ export function WorkspacePage() {
           Do your work here — every action (create, complete, upload, download…) is
           recorded as an event the security AI analyses.
         </p>
+        <p className="mt-2 text-xs text-slate-500">
+          Workspace
+          {project && <><span className="mx-1.5">›</span>{project.name}</>}
+          {task && <><span className="mx-1.5">›</span>{task.title}</>}
+        </p>
       </div>
       {error && <ErrorNote message={error} />}
 
       <div className="grid gap-4 lg:grid-cols-3">
-        {/* Projects */}
         <Card>
-          <h2 className="mb-2 text-sm font-semibold text-slate-200">Projects</h2>
+          <h2 className="mb-3 text-sm font-semibold text-slate-200">Projects</h2>
           <div className="mb-3 flex gap-2">
             <input className={input} placeholder="New project" value={newProject}
-                   onChange={(e) => setNewProject(e.target.value)} />
+                   onChange={(e) => setNewProject(e.target.value)}
+                   onKeyDown={(e) => e.key === 'Enter' && addProject()} />
             <button className={btn} onClick={addProject}>Add</button>
           </div>
-          <ul className="space-y-1">
-            {projects.map((p) => (
-              <li key={p.id}>
-                <button onClick={() => openProject(p)}
-                        className={`w-full rounded px-2 py-1.5 text-left text-sm ${project?.id === p.id ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800/50'}`}>
-                  {p.name}
-                </button>
-              </li>
-            ))}
-            {projects.length === 0 && <li className="text-sm text-muted">No projects yet.</li>}
-          </ul>
+          {projects.length === 0 ? (
+            <EmptyState message="No projects yet — create one above." />
+          ) : (
+            <ul className="space-y-1">
+              {projects.map((p) => (
+                <li key={p.id}>
+                  <button
+                    onClick={() => openProject(p)}
+                    className={`w-full truncate rounded border-l-2 px-3 py-2 text-left text-sm transition ${
+                      project?.id === p.id
+                        ? 'border-l-accent bg-slate-800/80 text-white'
+                        : 'border-l-transparent text-slate-300 hover:border-l-slate-600 hover:bg-slate-800/40'
+                    }`}
+                  >
+                    {p.name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </Card>
 
-        {/* Tasks */}
         <Card>
-          <h2 className="mb-2 text-sm font-semibold text-slate-200">
-            {project ? `Tasks · ${project.name}` : 'Tasks'}
-          </h2>
+          <h2 className="mb-3 text-sm font-semibold text-slate-200">Tasks</h2>
           {!project ? (
-            <p className="text-sm text-muted">Select a project.</p>
+            <EmptyState message="Select a project to see its tasks." />
           ) : (
             <>
               <div className="mb-3 flex gap-2">
                 <input className={input} placeholder="New task" value={newTask}
-                       onChange={(e) => setNewTask(e.target.value)} />
+                       onChange={(e) => setNewTask(e.target.value)}
+                       onKeyDown={(e) => e.key === 'Enter' && addTask()} />
                 <button className={btn} onClick={addTask}>Add</button>
               </div>
-              <ul className="space-y-1">
-                {tasks.map((t) => (
-                  <li key={t.id} className="flex items-center justify-between rounded px-2 py-1 hover:bg-slate-800/50">
-                    <button onClick={() => openTask(t)}
-                            className={`text-left text-sm ${task?.id === t.id ? 'text-white' : 'text-slate-300'}`}>
-                      {t.title} <Badge status={t.status === 'completed' ? 'normal' : 'open'} />
-                    </button>
-                    <span className="flex gap-1">
-                      {t.status !== 'completed' &&
-                        <button className={ghost} onClick={() => completeTask(t)}>done</button>}
-                      <button className={ghost} onClick={() => removeTask(t)}>del</button>
-                    </span>
-                  </li>
-                ))}
-                {tasks.length === 0 && <li className="text-sm text-muted">No tasks.</li>}
-              </ul>
+              {tasks.length === 0 ? (
+                <EmptyState message="No tasks yet — add one above." />
+              ) : (
+                <div className="space-y-4">
+                  <ul className="space-y-1">
+                    {openTasks.map((t) => (
+                      <li key={t.id} className="group flex items-center justify-between gap-2 rounded">
+                        <button onClick={() => openTask(t)}
+                                className={`flex flex-1 items-center gap-2 truncate rounded px-2 py-1.5 text-left text-sm ${task?.id === t.id ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800/40'}`}>
+                          <span className="truncate">{t.title}</span>
+                          <PriorityTag priority={t.priority} />
+                        </button>
+                        <span className="hidden shrink-0 gap-1 group-hover:flex">
+                          <button className={ghost} onClick={() => completeTask(t)}>done</button>
+                          <button className={ghost} onClick={() => removeTask(t)}>del</button>
+                        </span>
+                      </li>
+                    ))}
+                    {openTasks.length === 0 && <li className="px-2 text-xs text-slate-500">All tasks completed.</li>}
+                  </ul>
+                  {doneTasks.length > 0 && (
+                    <div>
+                      <div className="mb-1 px-2 text-xs uppercase text-muted">Completed ({doneTasks.length})</div>
+                      <ul className="space-y-1">
+                        {doneTasks.map((t) => (
+                          <li key={t.id} className="flex items-center justify-between gap-2 rounded">
+                            <button onClick={() => openTask(t)}
+                                    className={`flex-1 truncate rounded px-2 py-1.5 text-left text-sm text-slate-500 line-through ${task?.id === t.id ? 'bg-slate-800/60' : ''}`}>
+                              {t.title}
+                            </button>
+                            <button className={`${ghost} shrink-0`} onClick={() => removeTask(t)}>del</button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
             </>
           )}
         </Card>
 
-        {/* Task detail: notes + files */}
         <Card>
-          <h2 className="mb-2 text-sm font-semibold text-slate-200">
-            {task ? `Details · ${task.title}` : 'Details'}
-          </h2>
+          <h2 className="mb-3 text-sm font-semibold text-slate-200">Details</h2>
           {!task ? (
-            <p className="text-sm text-muted">Select a task.</p>
+            <EmptyState message="Select a task to view notes and files." />
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-5">
               <div>
-                <div className="mb-1 text-xs uppercase text-muted">Notes</div>
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted">Notes</span>
+                  <span className="text-xs text-slate-500">{notes.length}</span>
+                </div>
                 <div className="mb-2 flex gap-2">
                   <input className={input} placeholder="Add note" value={newNote}
-                         onChange={(e) => setNewNote(e.target.value)} />
+                         onChange={(e) => setNewNote(e.target.value)}
+                         onKeyDown={(e) => e.key === 'Enter' && addNote()} />
                   <button className={btn} onClick={addNote}>Add</button>
                 </div>
-                <ul className="space-y-1 text-sm text-slate-300">
-                  {notes.map((n) => <li key={n.id} className="rounded bg-slate-800/40 px-2 py-1">{n.content}</li>)}
-                </ul>
+                {notes.length === 0 ? (
+                  <p className="text-xs text-slate-500">No notes.</p>
+                ) : (
+                  <ul className="space-y-1 text-sm text-slate-300">
+                    {notes.map((n) => <li key={n.id} className="rounded bg-slate-800/40 px-2 py-1.5">{n.content}</li>)}
+                  </ul>
+                )}
               </div>
               <div>
-                <div className="mb-1 text-xs uppercase text-muted">Files</div>
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted">Files</span>
+                  <span className="text-xs text-slate-500">{files.length}</span>
+                </div>
                 <div className="mb-2 flex items-center gap-2">
                   <input
                     type="file"
@@ -209,22 +267,24 @@ export function WorkspacePage() {
                   />
                   <button className={btn} onClick={addFile} disabled={!newFile}>Upload</button>
                 </div>
-                <ul className="space-y-1 text-sm">
-                  {files.map((f) => (
-                    <li key={f.id} className="flex items-center justify-between rounded bg-slate-800/40 px-2 py-1">
-                      <span className="text-slate-300">
-                        {f.filename}{' '}
-                        {f.size_bytes != null && (
-                          <span className="text-xs text-muted">({formatBytes(f.size_bytes)})</span>
-                        )}
-                      </span>
-                      <span className="flex gap-1">
-                        <button className={ghost} onClick={() => download(f)}>download</button>
-                        <button className={ghost} onClick={() => removeFile(f)}>delete</button>
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                {files.length === 0 ? (
+                  <p className="text-xs text-slate-500">No files.</p>
+                ) : (
+                  <ul className="space-y-1 text-sm">
+                    {files.map((f) => (
+                      <li key={f.id} className="flex items-center justify-between gap-2 rounded bg-slate-800/40 px-2 py-1.5">
+                        <span className="truncate text-slate-300">
+                          {f.filename}{' '}
+                          {f.size_bytes != null && <span className="text-xs text-muted">({formatBytes(f.size_bytes)})</span>}
+                        </span>
+                        <span className="flex shrink-0 gap-1">
+                          <button className={ghost} onClick={() => download(f)}>download</button>
+                          <button className={ghost} onClick={() => removeFile(f)}>delete</button>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </div>
           )}

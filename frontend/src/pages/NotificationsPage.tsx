@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { notificationsApi } from '../api/endpoints';
 import { apiError } from '../api/client';
 import { AppNotification } from '../types';
-import { Card, Spinner, ErrorNote } from '../components/ui';
+import { Card, Spinner, ErrorNote, EmptyState } from '../components/ui';
 
 export function NotificationsPage() {
+  const navigate = useNavigate();
   const [items, setItems] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -17,11 +18,18 @@ export function NotificationsPage() {
   }, []);
   useEffect(() => { load(); }, [load]);
 
-  const markRead = async (id: number) => {
-    try { await notificationsApi.markRead(id); await load(); } catch (e) { setError(apiError(e)); }
-  };
   const markAll = async () => {
     try { await notificationsApi.markAllRead(); await load(); } catch (e) { setError(apiError(e)); }
+  };
+
+  // Click anywhere on a notification: mark it read, then jump straight to
+  // where it points — one action, no dead-end "open" link to miss.
+  const open = async (n: AppNotification) => {
+    if (!n.is_read) {
+      try { await notificationsApi.markRead(n.id); } catch (e) { setError(apiError(e)); }
+    }
+    if (n.link) navigate(n.link);
+    else await load();
   };
 
   if (loading) return <Spinner />;
@@ -29,33 +37,33 @@ export function NotificationsPage() {
   return (
     <div className="max-w-2xl space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-white">Notifications</h1>
+        <div>
+          <h1 className="text-xl font-semibold text-white">Notifications</h1>
+          <p className="text-sm text-muted">Click a notification to jump straight to it.</p>
+        </div>
         {items.some((n) => !n.is_read) &&
           <button onClick={markAll} className="text-sm text-accent">Mark all read</button>}
       </div>
       {error && <ErrorNote message={error} />}
       {items.length === 0 ? (
-        <p className="text-sm text-muted">You have no notifications.</p>
+        <EmptyState message="You have no notifications." />
       ) : (
         <div className="space-y-2">
           {items.map((n) => (
-            <Card key={n.id} className={n.is_read ? 'opacity-60' : 'border-l-4 border-l-accent'}>
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="text-sm font-medium text-slate-100">{n.title}</div>
-                  {n.body && <div className="text-xs text-muted">{n.body}</div>}
-                  <div className="mt-1 text-xs text-slate-500">
-                    {new Date(n.created_at).toLocaleString()}
-                    {n.link && <> · <Link to={n.link} className="text-accent">open</Link></>}
+            <button key={n.id} onClick={() => open(n)} className="block w-full text-left">
+              <Card className={`transition hover:border-slate-700 ${n.is_read ? 'opacity-60' : 'border-l-4 border-l-accent'}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium text-slate-100">{n.title}</div>
+                    {n.body && <div className="text-xs text-muted">{n.body}</div>}
+                    <div className="mt-1 text-xs text-slate-500">
+                      {new Date(n.created_at).toLocaleString()}
+                    </div>
                   </div>
+                  {!n.is_read && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-accent" />}
                 </div>
-                {!n.is_read &&
-                  <button onClick={() => markRead(n.id)}
-                          className="shrink-0 rounded border border-slate-700 px-2 py-1 text-xs text-slate-200 hover:bg-slate-800">
-                    mark read
-                  </button>}
-              </div>
-            </Card>
+              </Card>
+            </button>
           ))}
         </div>
       )}
