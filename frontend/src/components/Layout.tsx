@@ -110,7 +110,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <div className="relative">
             <button
               onClick={() => setMenuOpen((v) => !v)}
-              className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition-colors hover:bg-surface-800/70"
+              className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition-colors hover:bg-surface-800/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
             >
               <Avatar name={user?.name || '?'} size="sm" />
               <span className="min-w-0 flex-1">

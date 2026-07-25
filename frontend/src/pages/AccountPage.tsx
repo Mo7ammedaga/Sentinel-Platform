@@ -139,7 +139,8 @@ export function AccountPage() {
           <div className="-mt-10 flex items-end gap-4">
             <div className="relative">
               <Avatar name={profile.name} avatarUrl={avatarSrc} size="xl" />
-              <label className="absolute bottom-0 right-0 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-primary-600 text-white shadow-soft hover:bg-primary-500">
+              <label aria-label="Change avatar photo"
+                     className="absolute bottom-0 right-0 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-primary-600 text-white shadow-soft hover:bg-primary-500">
                 <Camera className="h-3 w-3" />
                 <input type="file" accept="image/*" className="hidden" disabled={uploading}
                        onChange={(e) => onAvatarPick(e.target.files?.[0] ?? null)} />
@@ -180,10 +181,12 @@ export function AccountPage() {
       {error && <ErrorNote message={error} />}
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-surface-800">
+      <div className="flex gap-1 border-b border-surface-800" role="tablist">
         {tabs.map((t) => (
           <button
             key={t.key}
+            role="tab"
+            aria-selected={tab === t.key}
             onClick={() => setTab(t.key)}
             className={`flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
               tab === t.key ? 'border-primary-500 text-primary-300' : 'border-transparent text-surface-500 hover:text-surface-300'

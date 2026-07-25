@@ -34,21 +34,23 @@ function TaskCard({ task, onOpen, onMove, onDelete }: {
   const idx = COLUMNS.findIndex((c) => c.key === task.status);
   return (
     <div className={`group animate-scaleIn rounded-lg border-l-4 border border-surface-800 bg-surface-900 p-3 shadow-soft transition-all hover:-translate-y-0.5 hover:border-surface-700 hover:shadow-card ${PRIORITY_STYLE[task.priority]}`}>
-      <button onClick={onOpen} className="block w-full text-left">
+      <button onClick={onOpen}
+              className="block w-full rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50">
         <div className="text-sm text-surface-200">{task.title}</div>
         <div className={`mt-1.5 text-[10px] font-medium uppercase tracking-wide ${PRIORITY_TAG[task.priority]}`}>{task.priority}</div>
       </button>
       {/* Always visible on touch (no hover state exists there); hover-reveal
           is a desktop-only declutter, not the only way to reach these. */}
       <div className="mt-2 flex items-center justify-between gap-1 md:hidden md:group-hover:flex">
-        <button disabled={idx <= 0} onClick={() => onMove(-1)}
+        <button disabled={idx <= 0} onClick={() => onMove(-1)} aria-label="Move to previous column"
                 className="rounded p-1 text-surface-500 hover:bg-surface-800 hover:text-surface-200 disabled:opacity-0">
           <ArrowLeft className="h-3.5 w-3.5" />
         </button>
-        <button onClick={onDelete} className="rounded p-1 text-surface-600 hover:bg-danger-500/20 hover:text-danger-400">
+        <button onClick={onDelete} aria-label="Delete task"
+                className="rounded p-1 text-surface-600 hover:bg-danger-500/20 hover:text-danger-400">
           <Trash2 className="h-3.5 w-3.5" />
         </button>
-        <button disabled={idx >= COLUMNS.length - 1} onClick={() => onMove(1)}
+        <button disabled={idx >= COLUMNS.length - 1} onClick={() => onMove(1)} aria-label="Move to next column"
                 className="rounded p-1 text-surface-500 hover:bg-surface-800 hover:text-surface-200 disabled:opacity-0">
           <ArrowRight className="h-3.5 w-3.5" />
         </button>
@@ -166,7 +168,8 @@ export function WorkspacePage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {projects.map((p) => (
               <Card key={p.id} hover className="group relative cursor-pointer">
-                <button onClick={() => openProject(p)} className="block w-full text-left">
+                <button onClick={() => openProject(p)}
+                        className="block w-full rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50">
                   <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-primary-500/10">
                     <FolderKanban className="h-4.5 w-4.5 text-primary-400" />
                   </div>
@@ -175,6 +178,7 @@ export function WorkspacePage() {
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); setConfirmDeleteProject(p); }}
+                  aria-label={`Delete project ${p.name}`}
                   className="absolute right-3 top-3 rounded p-1 text-surface-600 hover:bg-danger-500/20 hover:text-danger-400 md:hidden md:group-hover:block"
                 >
                   <MoreHorizontal className="h-4 w-4" />

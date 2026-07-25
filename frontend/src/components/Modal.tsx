@@ -1,5 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
+
+const FOCUSABLE = 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 export function Modal({ open, onClose, title, children, footer, size = 'md' }: {
   open: boolean;
@@ -9,12 +11,40 @@ export function Modal({ open, onClose, title, children, footer, size = 'md' }: {
   footer?: React.ReactNode;
   size?: 'md' | 'lg';
 }) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const previouslyFocused = useRef<HTMLElement | null>(null);
+
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { onClose(); return; }
+      // Keep keyboard focus inside the dialog while it's open, instead of
+      // tabbing into the page behind the backdrop.
+      if (e.key === 'Tab' && dialogRef.current) {
+        const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE));
+        if (focusable.length === 0) { e.preventDefault(); return; }
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault(); last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault(); first.focus();
+        }
+      }
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
+
+  useEffect(() => {
+    if (!open) return;
+    previouslyFocused.current = document.activeElement as HTMLElement | null;
+    // Land focus inside the dialog immediately — the container itself
+    // (rather than hunting for a "first" field) so this works even when the
+    // modal opens on a loading state with nothing else focusable yet.
+    dialogRef.current?.focus();
+    return () => { previouslyFocused.current?.focus?.(); };
+  }, [open]);
 
   if (!open) return null;
 
@@ -26,10 +56,12 @@ export function Modal({ open, onClose, title, children, footer, size = 'md' }: {
         aria-hidden="true"
       />
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={`relative w-full animate-scaleIn rounded-xl border border-surface-700 bg-surface-900 shadow-elevated ${
+        className={`relative w-full animate-scaleIn rounded-xl border border-surface-700 bg-surface-900 shadow-elevated outline-none ${
           size === 'lg' ? 'max-w-2xl' : 'max-w-md'
         }`}
       >

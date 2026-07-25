@@ -55,7 +55,8 @@ export function IncidentsPage() {
       ) : (
         <div className="space-y-2">
           {incidents.map((inc) => (
-            <button key={inc.id} onClick={() => setOpenId(inc.id)} className="block w-full text-left">
+            <button key={inc.id} onClick={() => setOpenId(inc.id)}
+                    className="block w-full rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50">
               <Card hover className="flex items-start justify-between gap-4">
                 <div className="flex min-w-0 gap-3">
                   <Avatar name={inc.subject_name || `User ${inc.subject_user_id}`} size="sm" />

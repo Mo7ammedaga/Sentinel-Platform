@@ -82,7 +82,7 @@ export function CommandPalette() {
                     <button
                       key={i.id}
                       onClick={goToFullResults}
-                      className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm text-surface-300 hover:bg-surface-800"
+                      className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm text-surface-300 hover:bg-surface-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
                     >
                       <Icon className="h-3.5 w-3.5 shrink-0 text-surface-500" />
                       <span className="truncate">{render(i)}</span>

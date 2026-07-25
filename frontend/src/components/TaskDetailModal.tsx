@@ -93,10 +93,12 @@ export function TaskDetailModal({ task, onClose, onChanged }: {
                     {f.size_bytes != null && <span className="text-xs text-surface-600">({formatBytes(f.size_bytes)})</span>}
                   </span>
                   <span className="flex shrink-0 gap-1">
-                    <button onClick={() => download(f)} className="rounded p-1.5 text-surface-500 hover:bg-surface-700 hover:text-surface-200">
+                    <button onClick={() => download(f)} aria-label={`Download ${f.filename}`}
+                            className="rounded p-1.5 text-surface-500 hover:bg-surface-700 hover:text-surface-200">
                       <Download className="h-3.5 w-3.5" />
                     </button>
-                    <button onClick={() => removeFile(f)} className="rounded p-1.5 text-surface-500 hover:bg-danger-500/20 hover:text-danger-400">
+                    <button onClick={() => removeFile(f)} aria-label={`Delete ${f.filename}`}
+                            className="rounded p-1.5 text-surface-500 hover:bg-danger-500/20 hover:text-danger-400">
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </span>

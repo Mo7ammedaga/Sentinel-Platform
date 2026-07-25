@@ -280,6 +280,7 @@ export function IncidentDetailModal({ investigationId, onClose, onChanged }: {
                     {ev.description && <span className="text-xs text-surface-600"> — {ev.description}</span>}
                   </span>
                   <button onClick={() => downloadEvidence(ev.id, ev.filename)}
+                          aria-label={`Download ${ev.filename}`}
                           className="shrink-0 rounded p-1.5 text-surface-500 hover:bg-surface-700 hover:text-surface-200">
                     <Download className="h-3.5 w-3.5" />
                   </button>

@@ -42,7 +42,12 @@ export function StatCard({ label, value, tone = 'normal', onClick, icon: Icon }:
   );
   return (
     <Card hover={!!onClick} className={`border-l-4 ${s.bar} ${onClick ? 'cursor-pointer' : ''}`}>
-      {onClick ? <button onClick={onClick} className="block w-full text-left">{content}</button> : content}
+      {onClick ? (
+        <button onClick={onClick}
+                className="block w-full rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50">
+          {content}
+        </button>
+      ) : content}
     </Card>
   );
 }

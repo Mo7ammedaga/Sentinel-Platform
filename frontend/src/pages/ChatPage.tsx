@@ -93,7 +93,7 @@ export function ChatPage() {
               {people.map((p) => (
                 <li key={p.id}>
                   <button onClick={() => loadConversation(p)}
-                          className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors ${active?.id === p.id ? 'bg-primary-500/10' : 'hover:bg-surface-800/60'}`}>
+                          className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 ${active?.id === p.id ? 'bg-primary-500/10' : 'hover:bg-surface-800/60'}`}>
                     <span className="relative">
                       <Avatar name={p.name} avatarUrl={avatarUrl(p.id)} size="sm" />
                       {/* Presence dot is cosmetic — no real presence-tracking backend exists. */}
@@ -158,6 +158,7 @@ export function ChatPage() {
                   <div className="absolute bottom-full left-3 mb-2 grid grid-cols-8 gap-1 rounded-lg border border-surface-700 bg-surface-800 p-2 shadow-elevated">
                     {EMOJIS.map((e) => (
                       <button key={e} onClick={() => { setText((t) => t + e); setShowEmoji(false); }}
+                              aria-label={`Insert ${e}`}
                               className="rounded p-1 text-lg hover:bg-surface-700">
                         {e}
                       </button>
@@ -165,18 +166,20 @@ export function ChatPage() {
                   </div>
                 )}
                 <div className="flex items-center gap-2">
-                  <button onClick={() => setShowEmoji((v) => !v)}
+                  <button onClick={() => setShowEmoji((v) => !v)} aria-label="Emoji picker"
                           className="shrink-0 rounded-lg p-2 text-surface-500 hover:bg-surface-800 hover:text-surface-300">
                     <Smile className="h-4 w-4" />
                   </button>
+                  <label htmlFor="chat-message-input" className="sr-only">Message</label>
                   <input
+                    id="chat-message-input"
                     value={text}
                     onChange={(e) => setText(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && send()}
                     placeholder="Type a message…"
                     className="flex-1 rounded-lg border border-surface-700 bg-surface-800 px-3 py-2 text-sm text-surface-100 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500/40"
                   />
-                  <button onClick={send} disabled={!text.trim()}
+                  <button onClick={send} disabled={!text.trim()} aria-label="Send message"
                           className="shrink-0 rounded-lg bg-primary-600 p-2 text-white transition-colors hover:bg-primary-500 disabled:opacity-40">
                     <Send className="h-4 w-4" />
                   </button>

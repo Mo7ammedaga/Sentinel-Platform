@@ -62,7 +62,8 @@ export function NotificationsPage() {
           {items.map((n) => {
             const Icon = ICONS[n.type] || Bell;
             return (
-              <button key={n.id} onClick={() => open(n)} className="block w-full text-left">
+              <button key={n.id} onClick={() => open(n)}
+                      className="block w-full rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50">
                 <Card hover className={`transition-opacity ${n.is_read ? 'opacity-60' : 'border-l-4 border-l-primary-500'}`}>
                   <div className="flex items-start gap-3">
                     <div className="rounded-lg bg-primary-500/10 p-2">
