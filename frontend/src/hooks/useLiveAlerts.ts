@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { API_BASE } from '../api/client';
+import { API_BASE, tokenStore } from '../api/client';
 import { LiveAlert } from '../types';
 
 // MVP is single-organization; the room to join is configurable.
@@ -22,7 +22,7 @@ export function useLiveAlerts(enabled: boolean) {
 
     socket.on('connect', () => {
       setConnected(true);
-      socket.emit('join_org', { organization_id: ORG_ID });
+      socket.emit('join_org', { organization_id: ORG_ID, token: tokenStore.access() });
     });
     socket.on('disconnect', () => setConnected(false));
     socket.on('alert', (data: LiveAlert & { status?: string }) => {
