@@ -183,14 +183,18 @@ npm install
 npm start                            # http://localhost:3000
 ```
 
-`flask db upgrade` also seeds a one-time bootstrap **Admin** account (migration
-`48b247de5e75`) — idempotent, so it's a no-op on every later upgrade. Default
-`admin@sentinel.local` / `ChangeMe123!` in development; **in production it
-requires `DEFAULT_ADMIN_EMAIL` and `DEFAULT_ADMIN_PASSWORD` to be set** (the
-migration — and therefore the deploy — fails otherwise, rather than silently
-create an admin with a guessable password). Log in with that account, then
-promote any self-registered account (`/signup` always creates **Employee**)
-to Manager/Analyst/Admin from the User Management page.
+`flask seed-admin` (run from `entrypoint.sh` on every startup, right after
+`flask db upgrade`) ensures a bootstrap **Admin** account exists — idempotent
+by checking whether `DEFAULT_ADMIN_EMAIL` already exists as a user, not by
+migration state, so it correctly reacts if you change these and redeploy
+(a one-shot Alembic migration can't: see `app/services/bootstrap_service.py`
+for why this isn't one). Default `admin@sentinel.local` / `ChangeMe123!` in
+development; **in production it requires `DEFAULT_ADMIN_EMAIL` and
+`DEFAULT_ADMIN_PASSWORD` to be set** whenever that account doesn't exist yet
+(fails startup otherwise, rather than silently create an admin with a
+guessable password). Log in with that account, then promote any
+self-registered account (`/signup` always creates **Employee**) to
+Manager/Analyst/Admin from the User Management page.
 
 ### Tests
 

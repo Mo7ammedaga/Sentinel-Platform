@@ -4,6 +4,36 @@ Revision ID: 48b247de5e75
 Revises: b53c0ee628e6
 Create Date: 2026-07-25 23:04:52.470864
 
+>>> SUPERSEDED — do not follow this pattern for future seed data <<<
+This is exactly the "data seeding via migration" mistake it warns readers
+about below, discovered the hard way: it ran successfully in production
+before DEFAULT_ADMIN_PASSWORD was correctly configured, so it seeded
+admin@sentinel.local with the dev-only fallback password. Because a
+migration only ever runs once per database, setting the *real* credentials
+afterwards and redeploying did nothing — the database was already past this
+revision, so `flask db upgrade` had nothing left to do here, no matter what
+the environment variables said.
+
+The actual, current bootstrap mechanism is `flask seed-admin` (see
+app/services/bootstrap_service.py and app/cli.py), run from entrypoint.sh on
+every startup — after `flask db upgrade`, before the server starts. It is
+idempotent by checking whether DEFAULT_ADMIN_EMAIL already exists as a row,
+not by tracking migration state, so it correctly reacts to changed
+credentials on any later deploy without needing a new migration or any edit
+to migration history.
+
+This migration is left completely unedited below (including its own
+now-superseded reasoning) because it has already been applied to a real
+production database — Alembic migrations must never be rewritten once
+applied; only this docstring header was added, which has no effect on
+already-migrated databases (Alembic does not check migration content, only
+revision ids). It's a harmless no-op on every environment that already
+reached this revision, and on any brand-new database it will still seed
+admin@sentinel.local once, before `flask seed-admin` gets a chance to run —
+which is fine: both are idempotent and keyed on the same email-exists check,
+so they never conflict or double-create.
+---
+
 Every deployment target (a developer's laptop, CI, a fresh Render database)
 provisions its schema the same way: `flask db upgrade`. Until this revision,
 that step created tables but never any data — the only way to get an admin

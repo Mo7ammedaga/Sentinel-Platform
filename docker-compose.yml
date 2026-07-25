@@ -26,7 +26,7 @@ services:
       JWT_SECRET_KEY: change-me-in-real-deploy
       CORS_ORIGINS: http://localhost:3000
       LOG_LEVEL: INFO
-      # Bootstrap admin (migration 48b247de5e75) — required because
+      # Bootstrap admin (flask seed-admin, entrypoint.sh) — required because
       # SENTINEL_ENVIRONMENT=production above; change before any real deploy.
       DEFAULT_ADMIN_EMAIL: admin@sentinel.local
       DEFAULT_ADMIN_PASSWORD: change-me-in-real-deploy

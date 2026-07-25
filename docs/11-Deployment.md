@@ -195,12 +195,26 @@ set by hand per environment:
 | `DATABASE_URL` | yes | provided by Render's Postgres add-on |
 | `SECRET_KEY`, `JWT_SECRET_KEY` | yes | app refuses to start with the built-in dev defaults in production |
 | `CORS_ORIGINS` | yes | the frontend Static Site's URL |
-| `DEFAULT_ADMIN_EMAIL`, `DEFAULT_ADMIN_PASSWORD` | yes | bootstrap admin account, seeded once by migration `48b247de5e75`; the migration (and therefore the deploy) fails without these in production — see the root README's "Getting started" section |
+| `DEFAULT_ADMIN_EMAIL`, `DEFAULT_ADMIN_PASSWORD` | yes | bootstrap admin account, ensured by `flask seed-admin` on every startup; fails startup without these in production if the account doesn't exist yet — see the root README's "Getting started" section |
 
-A fresh database gets its schema **and** its one bootstrap admin account from
-the same `flask db upgrade` step — there is no separate seed script to run
-and no manual database step required beyond setting the environment
-variables above before the first deploy.
+A fresh database gets its schema from `flask db upgrade` and its bootstrap
+admin account from `flask seed-admin` — both run automatically in
+`entrypoint.sh` on every startup, in that order, before the server starts.
+There is no separate seed script to run and no manual database step
+required beyond setting the environment variables above before the first
+deploy.
+
+`flask seed-admin` is deliberately **not** a migration: a migration runs at
+most once per database, so if it ran before `DEFAULT_ADMIN_PASSWORD` was
+correctly configured — or the intended admin email changes on a later
+deploy — there is no clean way to make it run again without editing
+migration history, which is unsafe once applied to a real database. This is
+exactly what happened during this project's first Render deployment
+(migration `48b247de5e75` seeded the dev-fallback account before the real
+credentials were set, then never ran again). `flask seed-admin` is
+idempotent by checking whether `DEFAULT_ADMIN_EMAIL` already exists as a
+user — not by tracking its own execution — so it reacts correctly to
+changed environment variables on every future deploy.
 
 ---
 

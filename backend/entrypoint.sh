@@ -22,6 +22,13 @@ flask db upgrade
 echo "=== Migration state after upgrade ==="
 flask db current
 
+# Idempotent by construction (checks whether DEFAULT_ADMIN_EMAIL already
+# exists, not by migration state) — safe to run on every startup, unlike a
+# migration which only ever runs once per database. See
+# app/services/bootstrap_service.py for why this isn't a migration.
+echo "=== Ensuring default admin account ==="
+flask seed-admin
+
 # Socket.IO requires a single worker unless a message queue (Redis) is used to
 # coordinate multiple workers — that scale-out step is the deferred C9. The
 # gevent-websocket worker handles both HTTP and WebSocket traffic.

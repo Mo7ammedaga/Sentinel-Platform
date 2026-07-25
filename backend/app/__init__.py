@@ -106,6 +106,9 @@ def create_app(config_class=None):
     app.register_blueprint(admin_bp)
     app.register_blueprint(notifications_bp)
 
+    from app.cli import register_cli
+    register_cli(app)
+
     @app.route("/")
     def home():
         return {"message": "Welcome to Sentinel Platform API"}
