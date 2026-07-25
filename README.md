@@ -100,7 +100,7 @@ layer, account profile with avatar upload and password change.
 **Privacy & compliance**
 A written monitoring notice, subject-access export of one's own event history,
 data-retention purge tooling, and analyst-action auditing — see
-[`docs/15`](<docs/15 - Human Review and Compliance.md>).
+[`docs/15`](docs/15-Human-Review-and-Compliance.md).
 
 **Engineering**
 71 backend tests (pytest) + 17 frontend tests (Jest/RTL), GitHub Actions CI
@@ -145,8 +145,8 @@ flowchart LR
     I --> J["Closed\n(full audit trail)"]
 ```
 
-Backend layering (docs [`13`](<docs/13 - Flask Extensions Architecture.md>),
-[`14`](<docs/14 - Backend Project Structure Final.md>)): **routes (thin) →
+Backend layering (docs [`13`](docs/13-Flask-Extensions-Architecture.md),
+[`14`](docs/14-Backend-Project-Structure-Final.md)): **routes (thin) →
 services (business logic) → models ← extensions**. Cross-cutting: RBAC
 decorators, pydantic request validation, centralized error handling,
 pagination, real-time WebSocket alerts.
@@ -241,7 +241,7 @@ All errors share one shape `{error, details?}`; list endpoints return
 
 ## Human safety
 
-See [`docs/15`](<docs/15 - Human Review and Compliance.md>). Transparency
+See [`docs/15`](docs/15-Human-Review-and-Compliance.md). Transparency
 notice, subject-access/export, analyst-action auditing, retention with
 evidence-preservation, and a strict **no automated consequence — a human
 decides** principle, enforced end-to-end through the incident-response

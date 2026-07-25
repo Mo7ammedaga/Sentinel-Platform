@@ -1,4 +1,4 @@
-# 15 - Human Review and Compliance (Phase E)
+# 15 - Human Review and Compliance
 
 ## Purpose
 

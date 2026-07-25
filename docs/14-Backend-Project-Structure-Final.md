@@ -168,7 +168,7 @@ class DevelopmentConfig(Config):
 Initializes all Flask extensions before application creation.
 
 **Contains (actual):** SQLAlchemy, SocketIO, Limiter only — see
-`docs/13 - Flask Extensions Architecture.md` for why Migrate/CORS/JWT are
+`docs/13-Flask-Extensions-Architecture.md` for why Migrate/CORS/JWT are
 handled differently (constructed inline in `create_app()`, or, for JWT, not
 an extension object at all).
 
