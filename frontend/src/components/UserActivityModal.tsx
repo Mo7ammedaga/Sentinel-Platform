@@ -6,8 +6,7 @@ import { ActivityPoint } from '../types';
 import { Modal } from './Modal';
 import { Badge, Spinner, ErrorNote, EmptyState } from './ui';
 
-/** A user's 7-day activity timeline — the backend endpoint has existed since
- * Phase A but never had a frontend surface until now. */
+/** A user's 7-day activity timeline. */
 export function UserActivityModal({ userId, userName, onClose }: {
   userId: number; userName: string; onClose: () => void;
 }) {

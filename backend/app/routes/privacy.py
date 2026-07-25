@@ -1,4 +1,4 @@
-"""Privacy & subject-access endpoints (Phase E).
+"""Privacy & subject-access endpoints.
 
 - /privacy/notice is public: transparency about what is monitored.
 - /me/events[/export] let ANY authenticated user see and export THEIR OWN data

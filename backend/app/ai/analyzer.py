@@ -94,7 +94,7 @@ def analyze_user_events(events, score_indices=None):
 
     rows, baseline_hours = extract_user_features(events)
 
-    # A2 — insufficient history: no reliable baseline -> neutral + flagged.
+    # Insufficient history: no reliable baseline -> neutral + flagged.
     if n < MIN_HISTORY:
         conf = round(min(1.0, n / (2 * MIN_HISTORY)), 3)
         return [UserBaselineResult(

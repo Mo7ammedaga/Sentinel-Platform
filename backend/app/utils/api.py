@@ -1,7 +1,7 @@
 """Small API helpers shared by routes: current user, pagination, validation.
 
-Designed for a JSON/REST client (the future React frontend): list endpoints
-return a consistent {items, pagination} envelope.
+Designed for a JSON/REST client (the React frontend): list endpoints return a
+consistent {items, pagination} envelope.
 """
 from flask import request
 

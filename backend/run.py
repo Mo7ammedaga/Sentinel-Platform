@@ -9,6 +9,7 @@ if __name__ == '__main__':
     # The schema is provisioned by migrations (`flask db upgrade`) — NOT by
     # db.create_all(). This keeps a clean deploy fully reproducible.
     # allow_unsafe_werkzeug lets the Werkzeug dev server run under Flask-SocketIO
-    # locally; do not use this server in production (use gunicorn + eventlet).
+    # locally; do not use this server in production (use gunicorn + gevent, as
+    # entrypoint.sh does).
     socketio.run(app, debug=True, host='0.0.0.0', port=5000,
                  allow_unsafe_werkzeug=True)

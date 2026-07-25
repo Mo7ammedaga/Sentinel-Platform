@@ -2,8 +2,8 @@
 
 Every error the API returns has the same shape:
     {"error": "<message>", "details": <optional>}
-so clients (and the future React frontend) can handle failures uniformly. This
-replaces ad-hoc error returns scattered across routes.
+so every client (the React frontend included) can handle failures uniformly,
+instead of ad-hoc error shapes scattered across routes.
 """
 from flask import jsonify
 from werkzeug.exceptions import HTTPException

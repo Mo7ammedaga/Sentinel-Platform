@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-A0 — Development Behavior Generator  (DEVELOPMENT TOOL ONLY)
+Development Behavior Generator  (DEVELOPMENT TOOL ONLY)
 
-This is NOT part of the product and NOT part of Phase A. It is a development
-tool whose only job is to produce realistic per-user event history so we can
-build and validate the AI Engine's per-user baseline anomaly detection (A1).
+This is NOT part of the product. It is a development tool whose only job is
+to produce realistic per-user event history so we can build and validate the
+AI Engine's per-user baseline anomaly detection.
 
 Guarantees
 ----------
@@ -176,7 +176,7 @@ def fingerprint(events):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="A0 Development Behavior Generator (development only)")
+        description="Development Behavior Generator (development only)")
     parser.add_argument("--seed", type=int, default=42,
                         help="PRNG seed; same seed => same data (default 42)")
     parser.add_argument("--days", type=int, default=30,

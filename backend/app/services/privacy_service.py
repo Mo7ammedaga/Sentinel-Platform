@@ -1,4 +1,4 @@
-"""Privacy / compliance logic (Phase E — because real people are monitored).
+"""Privacy / compliance logic — real people are monitored, so this matters.
 
 Covers transparency (what is collected), subject access (a user can see and
 export their own event history), and retention (purge old telemetry while

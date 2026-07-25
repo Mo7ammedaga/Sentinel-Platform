@@ -7,7 +7,7 @@ from flask_limiter.util import get_remote_address
 
 # Extensions are initialized here WITHOUT an app, then bound to the app inside
 # create_app() via init_app(). This keeps them importable everywhere (models,
-# routes, services) without circular imports. See docs/13 - Flask Extensions.
+# routes, services) without circular imports. See docs/13.
 db = SQLAlchemy()
 socketio = SocketIO()
 
