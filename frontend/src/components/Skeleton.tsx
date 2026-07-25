@@ -1,7 +1,7 @@
 import React from 'react';
 
 export function Skeleton({ className = '' }: { className?: string }) {
-  return <div className={`skeleton animate-shimmer rounded ${className}`} />;
+  return <div className={`skeleton animate-shimmer rounded ${className}`} aria-hidden="true" />;
 }
 
 /** A generic card-shaped loading placeholder — used while a page's first

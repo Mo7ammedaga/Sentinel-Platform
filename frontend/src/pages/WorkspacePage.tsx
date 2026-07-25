@@ -189,7 +189,7 @@ export function WorkspacePage() {
         )
       ) : (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <button onClick={() => setProject(null)} className="flex items-center gap-1.5 text-sm text-surface-400 hover:text-surface-200">
               <ChevronLeft className="h-4 w-4" /> {project.name}
             </button>

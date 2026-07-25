@@ -43,7 +43,7 @@ export function NotificationsPage() {
 
   return (
     <div className="max-w-2xl space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-white">Notifications</h1>
           <p className="text-sm text-surface-500">Click a notification to jump straight to it.</p>

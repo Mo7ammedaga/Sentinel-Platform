@@ -6,7 +6,7 @@ import { User } from '../types';
 interface AuthState {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
   register: (input: RegisterInput) => Promise<void>;
   logout: () => void;
 }
@@ -33,6 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const data = await authApi.login(email, password);
     tokenStore.set(data.access_token, data.refresh_token);
     setUser(data.user);
+    return data.user;
   }, []);
 
   const register = useCallback(async (input: RegisterInput) => {

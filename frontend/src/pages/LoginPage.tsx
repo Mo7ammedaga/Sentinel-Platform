@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Shield, ArrowRight } from 'lucide-react';
-import { useAuth } from '../auth/AuthContext';
+import { useAuth, isSecurity, isWorkspace } from '../auth/AuthContext';
 import { apiError } from '../api/client';
 import { ErrorNote } from '../components/ui';
 import { Input } from '../components/Field';
@@ -20,8 +20,10 @@ export function LoginPage() {
     setError('');
     setBusy(true);
     try {
-      await login(email, password);
-      navigate('/dashboard');
+      const user = await login(email, password);
+      // Land on whichever home actually applies to this role, instead of
+      // always trying /dashboard and bouncing workspace-only users off it.
+      navigate(isSecurity(user.role) ? '/dashboard' : isWorkspace(user.role) ? '/workspace' : '/my-data');
     } catch (err) {
       setError(apiError(err));
     } finally {

@@ -41,11 +41,15 @@ export function ActivityHeatmap({ data }: { data: RiskTrendPoint[] }) {
         {weeks.map((week, wi) => (
           <div key={wi} className="flex flex-col gap-1">
             {week.map((day) => (
-              <div
-                key={day.date}
-                className={`h-3 w-3 rounded-sm transition-transform hover:scale-125 ${cellClass(day.intensity)}`}
-                title={`${day.date}: ${day.intensity === 0 ? 'no anomalies' : `${day.intensity} weighted anomaly score`}`}
-              />
+              <div key={day.date} className="group relative">
+                <div className={`h-3 w-3 rounded-sm transition-transform hover:scale-125 ${cellClass(day.intensity)}`} />
+                <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 hidden -translate-x-1/2 whitespace-nowrap rounded-lg border border-surface-700 bg-surface-800 px-2.5 py-1.5 text-[11px] shadow-elevated group-hover:block">
+                  <span className="font-medium text-surface-100">{day.date}</span>
+                  <span className="text-surface-400">
+                    {' — '}{day.intensity === 0 ? 'no anomalies' : `${day.intensity} weighted anomaly score`}
+                  </span>
+                </div>
+              </div>
             ))}
           </div>
         ))}

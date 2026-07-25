@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   Shield, LayoutDashboard, AlertTriangle, ShieldAlert, Briefcase, MessageSquare, Search,
-  Bell, Users, UserCircle, Lock, Menu, LogOut, ChevronDown,
+  Bell, Users, UserCircle, Lock, ShieldCheck, Menu, LogOut, ChevronDown,
 } from 'lucide-react';
 import { useAuth, isSecurity, isWorkspace, isAdmin } from '../auth/AuthContext';
 import { notificationsApi } from '../api/endpoints';
@@ -104,6 +104,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           {link('/notifications', 'Notifications', Bell, unread)}
           {admin && link('/admin/users', 'User Management', Users)}
           {link('/my-data', 'My Data', Lock)}
+          {link('/privacy', 'Monitoring Notice', ShieldCheck)}
         </nav>
 
         <div className="border-t border-surface-800 p-3">
@@ -140,7 +141,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <header className="flex items-center justify-between border-b border-surface-800 bg-surface-950/60 px-4 py-3 backdrop-blur md:px-6">
           <button
             onClick={() => setSidebarOpen(true)}
