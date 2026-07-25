@@ -95,7 +95,7 @@ Sentinel-Platform/
 │
 ├── .github/workflows/ci.yml
 ├── docker-compose.yml
-├── LICENSE, README.md, PROJECT_CONTEXT.md
+├── LICENSE, README.md
 └── .gitignore
 ```
 

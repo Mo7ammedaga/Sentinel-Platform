@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   Plus, FolderKanban, ChevronLeft, MoreHorizontal, Trash2, ArrowRight, ArrowLeft,
 } from 'lucide-react';

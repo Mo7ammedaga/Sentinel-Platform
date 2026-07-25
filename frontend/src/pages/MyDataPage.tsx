@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Download, ChevronLeft, ChevronRight, Lock } from 'lucide-react';
 import { privacyApi } from '../api/endpoints';
 import { apiError, API_BASE, tokenStore } from '../api/client';

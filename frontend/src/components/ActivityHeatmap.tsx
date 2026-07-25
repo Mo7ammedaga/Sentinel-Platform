@@ -1,4 +1,3 @@
-import React from 'react';
 import { RiskTrendPoint } from '../types';
 
 /** GitHub-contributions-style heatmap, built entirely from the existing

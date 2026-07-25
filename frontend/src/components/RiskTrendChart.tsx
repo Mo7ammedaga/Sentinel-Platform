@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { RiskTrendPoint } from '../types';
 
 // Hand-rolled SVG bar chart — no charting library needed for one view, keeps

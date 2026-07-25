@@ -1,6 +1,6 @@
 import os
 
-from flask import Blueprint, request, jsonify, send_from_directory, current_app
+from flask import Blueprint, request, jsonify, send_from_directory
 from app.models import User
 from app.extensions import db, limiter
 from app.utils.auth import TokenManager, token_required
@@ -65,34 +65,17 @@ def login():
     if not data or not data.get('email') or not data.get('password'):
         return jsonify({'error': 'Email and password required'}), 400
 
-    # Find user by email
-    user = User.query.filter_by(email=data['email']).first()
-
-    # --- TEMPORARY DIAGNOSTIC — remove once the 401 investigation is done.
-    # Never logs the submitted or stored password, only whether verification
-    # passed and metadata needed to tell "wrong password" apart from
-    # "email didn't match the stored row" apart from "hash looks malformed".
-    verify_result = user.verify_password(data['password']) if user else None
-    current_app.logger.warning(
-        'TEMP DIAGNOSTIC login: submitted_email=%r found=%s user_id=%s role=%s '
-        'is_active=%s stored_email=%r hash_prefix=%r hash_len=%s '
-        'verify_password=%s submitted_password_len=%s',
-        data['email'],
-        user is not None,
-        getattr(user, 'id', None),
-        getattr(user, 'role', None),
-        getattr(user, 'is_active', None),
-        getattr(user, 'email', None),
-        (user.password_hash[:7] if user else None),
-        (len(user.password_hash) if user and user.password_hash else None),
-        verify_result,
-        len(data['password']),
-    )
-    # --- END TEMPORARY DIAGNOSTIC ---
+    # Normalize exactly like register() does — without this, an account
+    # created/looked-up as "user@x.com" silently fails to match a login
+    # attempt typed as "User@X.com" or with stray whitespace, and that
+    # "no such row" case returns the exact same generic 401 as a wrong
+    # password, making the two indistinguishable from the outside.
+    email = data['email'].strip().lower()
+    user = User.query.filter_by(email=email).first()
 
     # Wrong password on a known account: record a failed-login event.
     # (Unknown emails have no user_id to attach to, so they are not logged here.)
-    if user and not verify_result:
+    if user and not user.verify_password(data['password']):
         EventLogger.log_event(
             user_id=user.id, organization_id=user.organization_id,
             action_type='failed_login', resource_type='user',

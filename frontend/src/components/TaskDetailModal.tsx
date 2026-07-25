@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Download, Trash2, Upload } from 'lucide-react';
 import { workspaceApi } from '../api/endpoints';
 import { apiError } from '../api/client';
@@ -7,12 +7,7 @@ import { Task, Note, FileItem } from '../types';
 import { Modal } from './Modal';
 import { Button } from './Button';
 import { Input, Select } from './Field';
-
-function formatBytes(n: number): string {
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
-}
+import { formatBytes } from '../utils/format';
 
 export function TaskDetailModal({ task, onClose, onChanged }: {
   task: Task; onClose: () => void; onChanged: () => void;

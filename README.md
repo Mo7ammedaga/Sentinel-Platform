@@ -253,9 +253,7 @@ workflow above.
 
 `docs/01`–`docs/15` — vision, architecture, database, API, frontend, AI
 engine, deployment, backend config/extensions/structure, and human-review/
-compliance. `PROJECT_CONTEXT.md` is a raw development log kept for anyone
-curious how the system was actually built, session by session — not required
-reading, just the paper trail.
+compliance.
 
 ## License
 

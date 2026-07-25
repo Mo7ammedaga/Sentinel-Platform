@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Send, Check, CheckCheck, Smile } from 'lucide-react';
 import { chatApi } from '../api/endpoints';
 import { apiError, API_BASE } from '../api/client';

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ShieldAlert } from 'lucide-react';
 import { securityApi } from '../api/endpoints';
 import { apiError } from '../api/client';
