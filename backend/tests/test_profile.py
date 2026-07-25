@@ -66,6 +66,26 @@ def test_avatar_upload_and_serve_roundtrip(client, manager_headers):
     assert served.data == png_bytes
 
 
+def test_avatar_upload_ignores_spoofed_filename_extension(client, manager_headers):
+    """A client can claim any filename regardless of the real Content-Type —
+    e.g. 'evil.html' declared as image/png. The stored/served extension must
+    come from the checked mimetype, never the filename: the avatar route
+    serves inline with no auth, so an attacker-chosen .html extension there
+    would be a stored-XSS hole (the browser would render it, not download it).
+    """
+    payload = b'\x89PNG\r\n\x1a\nnot really html despite the filename'
+    up = client.post('/api/v1/auth/avatar', headers=manager_headers,
+                     data={'file': (io.BytesIO(payload), 'evil.html', 'image/png')},
+                     content_type='multipart/form-data')
+    assert up.status_code == 200
+    user = up.get_json()['user']
+
+    served = client.get(user['avatar_url'])
+    assert served.status_code == 200
+    assert 'html' not in served.content_type
+    assert served.content_type.startswith('image/')
+
+
 def test_avatar_upload_rejects_non_image(client, manager_headers):
     r = client.post('/api/v1/auth/avatar', headers=manager_headers,
                     data={'file': (io.BytesIO(b'not an image'), 'x.txt', 'text/plain')},

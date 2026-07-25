@@ -10,12 +10,21 @@ import os
 import uuid
 
 from flask import current_app
-from werkzeug.utils import secure_filename
 
 from app.extensions import db
 from app.utils.event_logger import EventLogger
 
-ALLOWED_AVATAR_TYPES = {'image/jpeg', 'image/png', 'image/gif', 'image/webp'}
+# The stored extension is chosen from this map, NEVER from the client-supplied
+# filename — the avatar route serves files inline (no attachment header) with
+# no auth, so trusting a client-claimed ".html"/".svg" extension there would
+# be a stored-XSS hole. mimetype is checked against this same allowlist below.
+AVATAR_EXT_BY_MIMETYPE = {
+    'image/jpeg': '.jpg',
+    'image/png': '.png',
+    'image/gif': '.gif',
+    'image/webp': '.webp',
+}
+ALLOWED_AVATAR_TYPES = set(AVATAR_EXT_BY_MIMETYPE)
 
 
 def _avatar_dir():
@@ -53,8 +62,7 @@ def save_avatar(user, upload):
         return None, 'Unsupported image type'
 
     old_stored_name = user.avatar_path
-    original_name = secure_filename(upload.filename) or 'avatar'
-    ext = os.path.splitext(original_name)[1] or '.jpg'
+    ext = AVATAR_EXT_BY_MIMETYPE[upload.mimetype]
     stored_name = f'{uuid.uuid4().hex}{ext}'
     upload.save(os.path.join(_avatar_dir(), stored_name))
 
