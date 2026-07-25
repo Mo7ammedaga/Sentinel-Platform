@@ -171,14 +171,16 @@ export function AlertsPage() {
                 the incident-response case file, opened once confirmed. */}
             {INVESTIGATION_STATES.filter((s) =>
               !['open', 'containing', 'resolved', 'closed'].includes(s)).map((s) => (
-              <button
+              <Button
                 key={s}
+                size="sm"
+                variant="secondary"
                 disabled={transitioning}
                 onClick={() => transition(s)}
-                className="rounded-lg border border-surface-700 px-2.5 py-1.5 text-xs capitalize text-surface-200 hover:bg-surface-800 disabled:opacity-50"
+                className="capitalize"
               >
                 {s.replace('_', ' ')}
-              </button>
+              </Button>
             ))}
           </div>
         }

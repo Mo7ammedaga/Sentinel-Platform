@@ -40,7 +40,7 @@ export function PrivacyPage() {
     <div className="max-w-3xl space-y-4">
       <div>
         <h1 className="text-xl font-semibold text-white">Monitoring Notice</h1>
-        <p className="mt-1 text-sm text-surface-500">{notice.purpose}</p>
+        <p className="text-sm text-surface-500">{notice.purpose}</p>
       </div>
       <Card className="border-l-4 border-l-primary-500">
         <h2 className="mb-1 flex items-center gap-2 text-sm font-semibold text-surface-200">

@@ -75,15 +75,14 @@ export function MyDataPage() {
             </tbody>
           </table>
           <div className="flex items-center justify-between border-t border-surface-800 px-4 py-3 text-xs text-surface-500">
-            <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}
-              className="flex items-center gap-1 rounded-lg border border-surface-700 px-2 py-1 disabled:opacity-40">
-              <ChevronLeft className="h-3 w-3" /> Prev
-            </button>
+            <Button size="sm" variant="secondary" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}
+                    icon={<ChevronLeft className="h-3 w-3" />}>
+              Prev
+            </Button>
             <span>Page {page} of {pages}</span>
-            <button disabled={page >= pages} onClick={() => setPage((p) => p + 1)}
-              className="flex items-center gap-1 rounded-lg border border-surface-700 px-2 py-1 disabled:opacity-40">
+            <Button size="sm" variant="secondary" disabled={page >= pages} onClick={() => setPage((p) => p + 1)}>
               Next <ChevronRight className="h-3 w-3" />
-            </button>
+            </Button>
           </div>
         </Card>
       )}
