@@ -56,8 +56,6 @@ def login():
     Login endpoint
     Takes: email, password
     Returns: JWT token
-    
-    العربي: نقطة تسجيل الدخول - تأخذ بريد وكلمة مرور وترجع token
     """
     data = request.get_json()
 

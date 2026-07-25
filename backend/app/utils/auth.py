@@ -72,8 +72,6 @@ def token_required(f):
     """
     Decorator to protect routes
     Checks if token is valid before allowing access
-    
-    العربي: ديكوريتر يحمي الـ routes - يتحقق من الـ token
     """
     @wraps(f)
     def decorated(*args, **kwargs):

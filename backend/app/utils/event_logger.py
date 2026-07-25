@@ -23,17 +23,15 @@ class EventLogger:
     ):
         """
         Log an event to database
-        
+
         Example:
         EventLogger.log_event(
             user_id=1,
             organization_id='org_001',
             action_type='login',
             resource_type='user',
-            description='Mohammed logged in'
+            description='User logged in'
         )
-        
-        العربي: تسجيل حدث في Database
         """
         try:
             event = Event(
