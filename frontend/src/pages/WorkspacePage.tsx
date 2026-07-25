@@ -8,7 +8,7 @@ import { useToast } from '../components/Toast';
 import { Project, Task } from '../types';
 import { Card, EmptyState } from '../components/ui';
 import { Button } from '../components/Button';
-import { Input } from '../components/Field';
+import { Input, Select } from '../components/Field';
 import { Modal, ConfirmModal } from '../components/Modal';
 import { TaskDetailModal } from '../components/TaskDetailModal';
 import { CardSkeleton } from '../components/Skeleton';
@@ -71,6 +71,7 @@ export function WorkspacePage() {
   const [newProjectOpen, setNewProjectOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [newTaskName, setNewTaskName] = useState('');
+  const [newTaskPriority, setNewTaskPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [openTask, setOpenTask] = useState<Task | null>(null);
   const [confirmDeleteTask, setConfirmDeleteTask] = useState<Task | null>(null);
   const [confirmDeleteProject, setConfirmDeleteProject] = useState<Project | null>(null);
@@ -114,10 +115,14 @@ export function WorkspacePage() {
   const addTask = async () => {
     if (!newTaskName.trim() || !project) return;
     try {
-      await workspaceApi.createTask(project.id, newTaskName.trim());
+      await workspaceApi.createTask(project.id, newTaskName.trim(), newTaskPriority);
       setNewTaskName('');
       setTasks(await workspaceApi.listTasks(project.id));
     } catch (e) { fail(e); }
+  };
+  const refreshTasks = async () => {
+    if (!project) return;
+    try { setTasks(await workspaceApi.listTasks(project.id)); } catch (e) { fail(e); }
   };
   const moveTask = async (t: Task, dir: 1 | -1) => {
     const idx = COLUMNS.findIndex((c) => c.key === t.status);
@@ -196,6 +201,13 @@ export function WorkspacePage() {
             <div className="flex gap-2">
               <Input value={newTaskName} onChange={(e) => setNewTaskName(e.target.value)}
                      onKeyDown={(e) => e.key === 'Enter' && addTask()} placeholder="New task title…" className="w-56" />
+              <Select value={newTaskPriority}
+                      onChange={(e) => setNewTaskPriority(e.target.value as 'low' | 'medium' | 'high')}
+                      className="w-28">
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </Select>
               <Button size="sm" icon={<Plus className="h-3.5 w-3.5" />} onClick={addTask}>Add</Button>
             </div>
           </div>
@@ -238,7 +250,7 @@ export function WorkspacePage() {
       </Modal>
 
       {openTask && (
-        <TaskDetailModal task={openTask} onClose={() => setOpenTask(null)} onChanged={() => {}} />
+        <TaskDetailModal task={openTask} onClose={() => setOpenTask(null)} onChanged={refreshTasks} />
       )}
 
       <ConfirmModal

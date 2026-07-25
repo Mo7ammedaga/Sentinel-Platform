@@ -6,7 +6,7 @@ import { useToast } from './Toast';
 import { Task, Note, FileItem } from '../types';
 import { Modal } from './Modal';
 import { Button } from './Button';
-import { Input } from './Field';
+import { Input, Select } from './Field';
 
 function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`;
@@ -22,6 +22,7 @@ export function TaskDetailModal({ task, onClose, onChanged }: {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [newNote, setNewNote] = useState('');
   const [newFile, setNewFile] = useState<File | null>(null);
+  const [priority, setPriority] = useState(task.priority);
   const [error, setError] = useState('');
 
   const load = async () => {
@@ -48,11 +49,32 @@ export function TaskDetailModal({ task, onClose, onChanged }: {
   const removeFile = async (f: FileItem) => {
     try { await workspaceApi.deleteFile(f.id); await load(); } catch (e) { setError(apiError(e)); }
   };
+  const changePriority = async (next: 'low' | 'medium' | 'high') => {
+    const previous = priority;
+    setPriority(next);   // optimistic — the select should feel instant
+    try {
+      await workspaceApi.updateTaskPriority(task.id, next);
+      onChanged();
+    } catch (e) {
+      setPriority(previous);
+      setError(apiError(e));
+    }
+  };
 
   return (
     <Modal open onClose={onClose} title={task.title}>
       {error && <p className="mb-3 text-xs text-danger-400">{error}</p>}
       <div className="space-y-5">
+        <div className="flex items-center gap-2">
+          <label className="text-xs font-semibold uppercase tracking-wide text-surface-500">Priority</label>
+          <Select value={priority} onChange={(e) => changePriority(e.target.value as 'low' | 'medium' | 'high')}
+                  className="w-32 py-1.5 text-xs">
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </Select>
+        </div>
+
         <div>
           <div className="mb-2 flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wide text-surface-500">Notes</span>

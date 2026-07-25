@@ -24,7 +24,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
     const poll = () => notificationsApi.unreadCount().then(setUnread).catch(() => {});
     poll();
     const id = setInterval(poll, 30_000);
-    return () => clearInterval(id);
+    // Re-poll immediately when the Notifications page marks something read,
+    // instead of leaving this badge stale for up to 30s.
+    window.addEventListener('sentinel:notifications-read', poll);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener('sentinel:notifications-read', poll);
+    };
   }, [user]);
 
   const link = (to: string, label: string, Icon: React.ElementType, badge?: number) => (

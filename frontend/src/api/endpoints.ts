@@ -121,12 +121,14 @@ export const workspaceApi = {
   listTasks: (project_id: number) =>
     api.get<Paginated<Task>>('/tasks', { params: { project_id, per_page: 100 } })
       .then((r) => r.data.items),
-  createTask: (project_id: number, title: string) =>
-    api.post<Task>('/tasks', { project_id, title }).then((r) => r.data),
+  createTask: (project_id: number, title: string, priority: 'low' | 'medium' | 'high' = 'medium') =>
+    api.post<Task>('/tasks', { project_id, title, priority }).then((r) => r.data),
   completeTask: (id: number) =>
     api.put<Task>(`/tasks/${id}`, { status: 'completed' }).then((r) => r.data),
   updateTaskStatus: (id: number, status: 'pending' | 'in_progress' | 'completed') =>
     api.put<Task>(`/tasks/${id}`, { status }).then((r) => r.data),
+  updateTaskPriority: (id: number, priority: 'low' | 'medium' | 'high') =>
+    api.put<Task>(`/tasks/${id}`, { priority }).then((r) => r.data),
   deleteTask: (id: number) => api.delete(`/tasks/${id}`).then((r) => r.data),
 
   listNotes: (task_id: number) =>

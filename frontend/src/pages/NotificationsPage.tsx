@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, CheckCheck, UserPlus, MessageSquare } from 'lucide-react';
+import { Bell, CheckCheck, UserPlus, MessageSquare, ArrowUpCircle } from 'lucide-react';
 import { notificationsApi } from '../api/endpoints';
 import { apiError } from '../api/client';
 import { AppNotification } from '../types';
@@ -10,7 +10,12 @@ import { CardSkeleton } from '../components/Skeleton';
 const ICONS: Record<string, React.ElementType> = {
   task_assigned: UserPlus,
   message_received: MessageSquare,
+  incident_escalated: ArrowUpCircle,
 };
+
+// Tell the sidebar's unread badge to re-check right away instead of waiting
+// for its own 30s poll — see components/Layout.tsx.
+const notifyRead = () => window.dispatchEvent(new Event('sentinel:notifications-read'));
 
 export function NotificationsPage() {
   const navigate = useNavigate();
@@ -26,14 +31,14 @@ export function NotificationsPage() {
   useEffect(() => { load(); }, [load]);
 
   const markAll = async () => {
-    try { await notificationsApi.markAllRead(); await load(); } catch (e) { setError(apiError(e)); }
+    try { await notificationsApi.markAllRead(); await load(); notifyRead(); } catch (e) { setError(apiError(e)); }
   };
 
   // Click anywhere on a notification: mark it read, then jump straight to
   // where it points — one action, no dead-end "open" link to miss.
   const open = async (n: AppNotification) => {
     if (!n.is_read) {
-      try { await notificationsApi.markRead(n.id); } catch (e) { setError(apiError(e)); }
+      try { await notificationsApi.markRead(n.id); notifyRead(); } catch (e) { setError(apiError(e)); }
     }
     if (n.link) navigate(n.link);
     else await load();
