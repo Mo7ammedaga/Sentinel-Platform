@@ -20,6 +20,17 @@ Each folder can expand independently without affecting others.
 
 # Final Backend Structure
 
+> **Status note:** the tree below is the structure as actually implemented,
+> which consolidated several of this document's originally-planned
+> per-entity files (e.g. one `models/workspace.py` holds `Workspace`,
+> `Project`, `Task`, `File`, `Note`, `Message` together; one
+> `routes/workspace.py` blueprint serves all of them) rather than splitting
+> every entity into its own file. The **pattern** described in "Folder
+> Responsibilities" below — routes stay thin, services hold business logic,
+> models are the schema, everything cross-cutting lives in `utils/` — is
+> unchanged and still exactly how the code is organized; only the exact
+> file-per-file granularity differs from the original plan.
+
 ```
 Sentinel-Platform/
 │
@@ -30,114 +41,71 @@ Sentinel-Platform/
 │   │   ├── extensions.py
 │   │   │
 │   │   ├── routes/
-│   │   │   ├── __init__.py
-│   │   │   ├── auth.py
-│   │   │   ├── users.py
-│   │   │   ├── workspaces.py
-│   │   │   ├── projects.py
-│   │   │   ├── tasks.py
-│   │   │   ├── files.py
-│   │   │   ├── notes.py
-│   │   │   ├── messages.py
+│   │   │   ├── admin.py            (role assignment, retention purge)
+│   │   │   ├── ai.py                (POST /ai/analyze)
+│   │   │   ├── auth.py              (register/login/refresh/profile/sessions)
+│   │   │   ├── dashboard.py
 │   │   │   ├── notifications.py
-│   │   │   ├── events.py
-│   │   │   └── security.py
+│   │   │   ├── privacy.py           (monitoring notice, my-events export)
+│   │   │   ├── security.py          (alerts, investigations, incident response)
+│   │   │   └── workspace.py         (workspaces/projects/tasks/files/notes/messages)
 │   │   │
 │   │   ├── models/
-│   │   │   ├── __init__.py
-│   │   │   ├── user.py
-│   │   │   ├── workspace.py
-│   │   │   ├── project.py
-│   │   │   ├── task.py
-│   │   │   ├── file.py
-│   │   │   ├── note.py
-│   │   │   ├── message.py
-│   │   │   ├── notification.py
-│   │   │   ├── event.py
-│   │   │   ├── alert.py
-│   │   │   ├── risk_score.py
-│   │   │   └── role.py
+│   │   │   ├── user.py, user_session.py
+│   │   │   ├── workspace.py         (Workspace, Project, Task, File, Note, Message)
+│   │   │   ├── event.py, ai_analysis.py
+│   │   │   ├── alert.py, investigation.py
+│   │   │   ├── incident_action.py, incident_evidence.py
+│   │   │   ├── risk_score.py, notification.py
+│   │   │
+│   │   ├── schemas/                 (pydantic request validation)
+│   │   │   ├── auth.py, security.py, workspace.py
 │   │   │
 │   │   ├── services/
-│   │   │   ├── __init__.py
-│   │   │   ├── auth_service.py
-│   │   │   ├── user_service.py
 │   │   │   ├── workspace_service.py
-│   │   │   ├── project_service.py
-│   │   │   ├── task_service.py
-│   │   │   ├── file_service.py
-│   │   │   ├── event_service.py
-│   │   │   ├── notification_service.py
-│   │   │   └── security_service.py
+│   │   │   ├── security_service.py  (analysis, alerts, incident response)
+│   │   │   ├── notification_service.py, privacy_service.py
+│   │   │   ├── profile_service.py, session_service.py
 │   │   │
 │   │   ├── utils/
-│   │   │   ├── __init__.py
-│   │   │   ├── decorators.py
-│   │   │   ├── validators.py
-│   │   │   ├── helpers.py
-│   │   │   └── constants.py
+│   │   │   ├── api.py, auth.py, constants.py
+│   │   │   ├── decorators.py, errors.py
+│   │   │   ├── event_logger.py, validation.py
 │   │   │
 │   │   ├── middleware/
-│   │   │   ├── __init__.py
-│   │   │   ├── auth_middleware.py
-│   │   │   ├── error_handler.py
-│   │   │   └── logging_middleware.py
+│   │   │   ├── error_handler.py, security.py
 │   │   │
-│   │   ├── websockets/
-│   │   │   ├── __init__.py
-│   │   │   ├── events.py
-│   │   │   ├── handlers.py
-│   │   │   └── namespaces.py
+│   │   ├── events/                  (WebSocket, not "websockets/")
+│   │   │   └── websocket.py
 │   │   │
 │   │   └── ai/
-│   │       ├── __init__.py
 │   │       ├── analyzer.py
-│   │       ├── feature_extractor.py
-│   │       └── models.py
+│   │       └── feature_extractor.py
 │   │
-│   ├── migrations/
-│   │   ├── versions/
-│   │   │   └── (database migrations)
-│   │   ├── env.py
-│   │   ├── script.py.mako
-│   │   └── alembic.ini
-│   │
-│   ├── tests/
-│   │   ├── __init__.py
-│   │   ├── conftest.py
-│   │   ├── test_auth.py
-│   │   ├── test_users.py
-│   │   ├── test_workspaces.py
-│   │   ├── test_projects.py
-│   │   ├── test_tasks.py
-│   │   ├── test_events.py
-│   │   ├── test_security.py
-│   │   └── fixtures/
-│   │       └── (test data)
-│   │
-│   ├── .env.example
-│   ├── .gitignore
-│   ├── run.py
-│   ├── requirements.txt
-│   └── README.md
+│   ├── migrations/versions/         (7 migrations; see docs/07)
+│   ├── scripts/dev_behavior_generator.py   (deterministic dev/demo data)
+│   ├── tests/                       (71 tests across 13 files)
+│   ├── Dockerfile, .dockerignore, entrypoint.sh
+│   ├── .env.example, .gitignore, pytest.ini
+│   ├── run.py, requirements.txt
 │
-├── frontend/
-│   └── (React application)
+├── frontend/                        (React 19 + TypeScript, see docs/09)
 │
-├── ai-engine/
-│   └── (Python AI services)
+├── docs/                            (01-15, see docs/README context in root README.md)
 │
-├── docs/
-│   ├── 01-Vision.md
-│   ├── 02-Technology-Stack.md
-│   ├── ... (all documentation)
-│   ├── 12-Backend-Configuration.md
-│   ├── 13-Flask-Extensions.md
-│   └── 14-Backend-Project-Structure.md
-│
-├── README.md
+├── .github/workflows/ci.yml
+├── docker-compose.yml
+├── LICENSE, README.md, PROJECT_CONTEXT.md
 └── .gitignore
 ```
+
+There is no top-level `ai-engine/` folder — the AI engine lives inside
+`backend/app/ai/`, sharing the same process and database session as the rest
+of the backend rather than running as a separate service. This was a
+deliberate simplification: at this scale, a separate service would add
+deployment complexity (a second process, a second set of DB credentials,
+inter-service auth) without a benefit — the AI engine is a pure function of
+data already in the same database.
 
 ---
 
@@ -199,23 +167,22 @@ class DevelopmentConfig(Config):
 
 Initializes all Flask extensions before application creation.
 
-**Contains:**
-- SQLAlchemy
-- Flask-Migrate
-- Flask-JWT-Extended
-- Flask-SocketIO
-- Flask-CORS
-- Werkzeug
+**Contains (actual):** SQLAlchemy, SocketIO, Limiter only — see
+`docs/13 - Flask Extensions Architecture.md` for why Migrate/CORS/JWT are
+handled differently (constructed inline in `create_app()`, or, for JWT, not
+an extension object at all).
 
-**File size:** ~30 lines
+**File size:** ~20 lines
 
-**Example:**
+**Example (actual):**
 ```python
 from flask_sqlalchemy import SQLAlchemy
+from flask_socketio import SocketIO
+from flask_limiter import Limiter
 
 db = SQLAlchemy()
-migrate = Migrate()
-jwt = JWTManager()
+socketio = SocketIO()
+limiter = Limiter(key_func=get_remote_address, storage_uri=...)
 ```
 
 **Why separate file?**
@@ -639,17 +606,18 @@ python run.py
 
 Lists all Python packages and versions.
 
-**Example:**
+**Actual current pins** (`backend/requirements.txt`):
 ```
-Flask==3.0.0
-Flask-SQLAlchemy==3.0.0
-Flask-Migrate==4.0.0
-Flask-JWT-Extended==4.4.0
-Flask-SocketIO==5.3.0
-Flask-CORS==4.0.0
+Flask==3.1.3
+Flask-SQLAlchemy==3.0.5
+Flask-Migrate==4.0.5
+PyJWT==2.13.0
+flask-socketio==5.6.1
+flask-cors==6.0.5
+flask-limiter==4.1.1
 python-dotenv==1.0.0
-psycopg2-binary==2.9.7
-scikit-learn==1.3.0
+psycopg2-binary==2.9.12
+scikit-learn==1.9.0
 ```
 
 **Generated by:**

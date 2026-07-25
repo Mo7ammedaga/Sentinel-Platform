@@ -22,8 +22,9 @@ src/
   api/         axios client (auth + refresh) and typed endpoint wrappers
   auth/        AuthContext + role-gated ProtectedRoute
   hooks/       useLiveAlerts (Socket.IO)
-  components/  Layout + shared UI (Card, Badge, StatCard, …)
-  pages/       Login, Dashboard, Alerts, MyData, Privacy
+  components/  Layout, Modal, IncidentDetailModal, TaskDetailModal, charts, shared UI
+  pages/       Login, Signup, Dashboard, Alerts, Incidents, Workspace, Chat,
+               Notifications, Search, Account, User Management, My Data, Privacy
   types.ts     shared types mirroring the API
 ```
 

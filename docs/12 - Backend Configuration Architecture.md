@@ -6,6 +6,21 @@ This document defines how Sentinel Platform's backend manages configuration acro
 
 Configuration is the foundation of a scalable backend. It allows the same codebase to run in Development, Testing, and Production environments without modifying code.
 
+> **Status note:** this document's examples consistently use a `SENTINEL_*`
+> prefix for every environment variable (`SENTINEL_DATABASE_URL`,
+> `SENTINEL_SECRET_KEY`, `SENTINEL_JWT_SECRET`, `SENTINEL_CORS_ORIGINS`,
+> `SENTINEL_LOG_LEVEL`, ...). The actual implementation only kept the prefix
+> on `SENTINEL_ENVIRONMENT` — every other variable is unprefixed. The real,
+> current names (see `backend/.env.example`) are: `DATABASE_URL`,
+> `SECRET_KEY`, `JWT_SECRET_KEY`, `CORS_ORIGINS`, `LOG_LEVEL`,
+> `SQLALCHEMY_ECHO`, `RATELIMIT_STORAGE_URI`. There are also no separate
+> `SENTINEL_DEBUG` / `SENTINEL_TESTING` flags — one `SENTINEL_ENVIRONMENT`
+> value (`development` / `testing` / `production`) selects the whole Config
+> class (`app/config.py`: `DevelopmentConfig` / `TestingConfig` /
+> `ProductionConfig`), and that class's own attributes set `DEBUG`/`TESTING`.
+> The three-environment *shape* described below is accurate; only the exact
+> variable names differ from what's shown in the examples.
+
 ---
 
 # Configuration Objectives

@@ -16,9 +16,10 @@ Examples:
 
 - SQLAlchemy: Database communication
 - Flask-Migrate: Database migrations
-- Flask-JWT-Extended: Authentication with JWT
+- PyJWT: Authentication with JWT (hand-rolled, not Flask-JWT-Extended — see Extension 3 below)
 - Flask-SocketIO: Real-time WebSocket communication
 - Flask-CORS: Cross-Origin Resource Sharing
+- Flask-Limiter: Rate limiting (see Extension 6 below)
 
 Extensions are NOT created inside `run.py`. They are initialized in `extensions.py` and used throughout the application.
 
@@ -49,13 +50,14 @@ Solution: Put extension initialization in `extensions.py`, then import from ther
 
 # Extensions Used by Sentinel Platform
 
-Sentinel Platform uses five core extensions:
+Sentinel Platform uses six core extensions/libraries:
 
 1. **SQLAlchemy** - Database ORM
 2. **Flask-Migrate** - Database migrations
-3. **Flask-JWT-Extended** - JWT authentication
+3. **PyJWT** - JWT authentication (not Flask-JWT-Extended)
 4. **Flask-SocketIO** - Real-time WebSocket communication
 5. **Flask-CORS** - Cross-origin requests
+6. **Flask-Limiter** - Rate limiting
 
 Additional utilities:
 
@@ -177,13 +179,21 @@ Connect migration system to application and database.
 
 ---
 
-# Extension 3: Flask-JWT-Extended
+# Extension 3: JWT Authentication (PyJWT, not Flask-JWT-Extended)
+
+> **Implementation note:** the original design called for Flask-JWT-Extended.
+> The actual implementation uses the plain **PyJWT** library directly, with a
+> small hand-rolled `TokenManager` (`app/utils/auth.py`) and a `@token_required`
+> decorator (`app/utils/decorators.py`) instead of a Flask extension object —
+> there's no `jwt = JWTManager()` in `extensions.py`. The behaviour described
+> below (stateless tokens, access/refresh split, role checks) is unchanged;
+> only the mechanism is simpler than originally planned.
 
 ## Purpose
 
-Flask-JWT-Extended manages user authentication using JWT tokens.
-
-When a user logs in, they receive a token. They include this token in subsequent requests to prove their identity.
+JWT-based authentication for user identity. When a user logs in, they receive
+an access token and a refresh token. The access token is sent as
+`Authorization: Bearer <token>` on every subsequent request to prove identity.
 
 ## Why JWT?
 
@@ -196,24 +206,28 @@ When a user logs in, they receive a token. They include this token in subsequent
 ## Package Name
 
 ```
-Flask-JWT-Extended
+PyJWT
 ```
 
-## Initialization
+## Implementation
 
 ```python
-from flask_jwt_extended import JWTManager
+# app/utils/auth.py
+class TokenManager:
+    @staticmethod
+    def generate_token(user_id, user_email, role, sid=None) -> str:
+        payload = {'user_id': user_id, 'email': user_email, 'role': role,
+                   'type': 'access', 'iat': ..., 'exp': ...}
+        return jwt.encode(payload, current_app.config['JWT_SECRET_KEY'], algorithm='HS256')
 
-jwt = JWTManager()
+# app/utils/decorators.py / app/utils/auth.py
+@token_required   # verifies the Bearer token, attaches request.user_id
+def some_route():
+    ...
 ```
 
-## Usage in create_app()
-
-```python
-jwt.init_app(app)
-```
-
-Connect JWT system to application.
+There is no extension object to register in `create_app()` — `jwt.encode` /
+`jwt.decode` are called directly wherever a token is issued or verified.
 
 ## Configuration Required
 
@@ -225,13 +239,13 @@ app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=7)
 
 These are set in config.py.
 
-## When is Flask-JWT-Extended Used?
+## When is JWT used?
 
 - User login: Generate access token and refresh token
-- Protect API endpoints: Check if token is valid
-- Refresh expired tokens
-- Get current user from token
-- Restrict access by role
+- Protect API endpoints: `@token_required` checks the token is valid
+- Refresh expired tokens: `POST /auth/refresh`
+- Get current user from token: `request.user_id` set by the decorator
+- Restrict access by role: `@role_required(...)` reads the token's `role` claim
 
 ## Token Types
 
@@ -415,34 +429,42 @@ if check_password_hash(hashed, input_password):
 
 # Extension Initialization Order
 
-Extensions must be initialized in the correct order.
+> **Status note:** only SQLAlchemy, SocketIO, and Limiter are pre-instantiated
+> in `extensions.py`. Flask-Migrate and Flask-CORS are constructed directly
+> inside `create_app()` (`app/__init__.py`) instead, since they need
+> config values (`CORS_ORIGINS`) at construction time rather than a later
+> `init_app()` call. JWT has no extension object at all — see Extension 3.
+> The dependency *order* below is still correct; the mechanism differs.
 
-## Initialization Sequence
+## Initialization Sequence (as actually called in `create_app()`)
 
-1. **SQLAlchemy** - Must be first, other extensions depend on it
-2. **Flask-Migrate** - Depends on SQLAlchemy
-3. **Flask-JWT-Extended** - Independent
-4. **Flask-SocketIO** - Should initialize after others
-5. **Flask-CORS** - Should initialize last
+1. **SQLAlchemy** (`db.init_app(app)`) - Must be first, other pieces depend on it
+2. **Flask-CORS** (`CORS(app, resources={...})`) - Needs `CORS_ORIGINS` from config
+3. **Flask-Migrate** (`Migrate(app, db)`) - Depends on SQLAlchemy
+4. **Flask-Limiter** (`limiter.init_app(app)`)
+5. **Flask-SocketIO** (`socketio.init_app(app, ...)`) - Last, wraps the WSGI app
+6. **JWT** - No init step; `jwt.encode`/`jwt.decode` are called directly wherever needed
 
 ---
 
 # extensions.py Structure
 
 ```python
+# app/extensions.py — only the pieces that need to exist BEFORE create_app()
+# runs (imported by models/routes/services without a circular-import risk).
 from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
-from flask_jwt_extended import JWTManager
 from flask_socketio import SocketIO
-from flask_cors import CORS
+from flask_limiter import Limiter
 
-# Initialize extensions (no app context)
 db = SQLAlchemy()
-migrate = Migrate()
-jwt = JWTManager()
 socketio = SocketIO()
-cors = CORS()
+limiter = Limiter(key_func=get_remote_address, storage_uri=...)
 ```
+
+`Migrate(app, db)` and `CORS(app, ...)` are constructed inline inside
+`create_app()` instead — they're only ever used once, at startup, so there's
+no benefit to pre-instantiating them the way `db`/`socketio`/`limiter` are
+(those three are imported directly by models/routes/services elsewhere).
 
 This file contains ONLY initialization. No logic.
 
@@ -450,18 +472,18 @@ This file contains ONLY initialization. No logic.
 
 # Dependency Relationships
 
-Extensions have dependencies on each other:
-
 ```
 SQLAlchemy (base)
     ↓
+Flask-CORS (needs config, constructed in create_app())
+    ↓
 Flask-Migrate (depends on SQLAlchemy)
     ↓
-Flask-JWT-Extended (independent)
+Flask-Limiter
     ↓
-Flask-SocketIO (independent)
-    ↓
-Flask-CORS (independent)
+Flask-SocketIO (wraps the app last)
+
+JWT: independent, no init step (see Extension 3)
 ```
 
 ---
@@ -563,15 +585,22 @@ JWT_ALGORITHM = 'HS256'
 ## CORS Configuration
 
 ```python
-CORS_ORIGINS = os.environ.get('SENTINEL_CORS_ORIGINS', 'http://localhost:3000')
+CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://localhost:3000')
 ```
 
 ## Socket.IO Configuration
 
-```python
-SOCKETIO_ASYNC_MODE = 'threading'
-SOCKETIO_CORS_ALLOWED_ORIGINS = CORS_ORIGINS
-```
+Socket.IO reuses `CORS_ORIGINS` directly (`socketio.run(app, ...)` / the
+`SocketIO()` instance in `extensions.py`) — there's no separate
+`SOCKETIO_ASYNC_MODE` / `SOCKETIO_CORS_ALLOWED_ORIGINS` config pair.
+
+## Extension 6: Flask-Limiter
+
+Added after this document's original approval, for rate-limiting sensitive
+endpoints (login, registration) against brute-force attempts. Initialized in
+`extensions.py` alongside SQLAlchemy and SocketIO, keyed by client IP, with
+in-memory storage in development and `RATELIMIT_STORAGE_URI` (e.g. Redis) in
+production.
 
 ---
 
@@ -630,13 +659,16 @@ def test_client():
 
 Track extension versions in requirements.txt.
 
+Actual current pins (`backend/requirements.txt`):
+
 ```
-Flask==3.0.0
-Flask-SQLAlchemy==3.0.0
-Flask-Migrate==4.0.0
-Flask-JWT-Extended==4.4.0
-Flask-SocketIO==5.3.0
-Flask-CORS==4.0.0
+Flask==3.1.3
+Flask-SQLAlchemy==3.0.5
+Flask-Migrate==4.0.5
+PyJWT==2.13.0
+flask-socketio==5.6.1
+flask-cors==6.0.5
+flask-limiter==4.1.1
 ```
 
 Pin versions to ensure consistency across environments.
@@ -713,11 +745,14 @@ Extensions provide critical functionality:
 |-----------|-----------------|
 | SQLAlchemy | Database communication |
 | Flask-Migrate | Schema migrations |
-| Flask-JWT-Extended | User authentication |
+| PyJWT | User authentication (hand-rolled, not Flask-JWT-Extended) |
 | Flask-SocketIO | Real-time updates |
 | Flask-CORS | Cross-origin requests |
+| Flask-Limiter | Rate limiting |
 
-All extensions are initialized in `extensions.py` and used throughout the application via `create_app()`.
+SQLAlchemy, SocketIO, and Limiter are pre-instantiated in `extensions.py`;
+Migrate and CORS are constructed inline in `create_app()`; JWT has no
+extension object. See the initialization-order note above for why.
 
 ---
 
