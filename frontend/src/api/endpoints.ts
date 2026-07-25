@@ -3,7 +3,7 @@ import {
   Alert, DashboardStats, HighRiskUser, Investigation, Paginated, User, UserEvent,
   Workspace, Project, Task, Note, FileItem, DirectoryUser, Message,
   AppNotification, SearchResults, ManagedUser, Role, BaselineCoverage, FullProfile,
-  ModelPerformance, RiskTrendPoint,
+  ModelPerformance, RiskTrendPoint, Session,
 } from '../types';
 
 interface AuthResponse { access_token: string; refresh_token: string; user: User; }
@@ -31,6 +31,11 @@ export const authApi = {
       headers: { 'Content-Type': 'multipart/form-data' },
     }).then((r) => r.data.user);
   },
+
+  listSessions: () =>
+    api.get<{ sessions: Session[] }>('/auth/sessions').then((r) => r.data.sessions),
+  revokeSession: (id: number) =>
+    api.delete(`/auth/sessions/${id}`).then((r) => r.data),
 };
 
 export const securityApi = {

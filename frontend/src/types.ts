@@ -7,6 +7,15 @@ export interface User {
   role: Role;
 }
 
+export interface Session {
+  id: number;
+  device: string;
+  ip_address: string | null;
+  created_at: string;
+  last_used_at: string | null;
+  is_current: boolean;
+}
+
 export interface FullProfile extends User {
   first_name: string;
   last_name: string;

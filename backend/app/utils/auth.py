@@ -15,8 +15,12 @@ class PasswordManager:
 
 class TokenManager:
     @staticmethod
-    def generate_token(user_id: int, user_email: str, role: str) -> str:
-        """Short-lived ACCESS token used to call protected endpoints."""
+    def generate_token(user_id: int, user_email: str, role: str, sid: str = None) -> str:
+        """Short-lived ACCESS token used to call protected endpoints.
+
+        `sid` (session id) links this token back to the UserSession/refresh
+        token that produced it, so /auth/sessions can mark "this device".
+        """
         expires = current_app.config.get('JWT_ACCESS_TOKEN_EXPIRES',
                                           timedelta(hours=24))
         payload = {
@@ -27,11 +31,17 @@ class TokenManager:
             'iat': datetime.utcnow(),
             'exp': datetime.utcnow() + expires
         }
+        if sid:
+            payload['sid'] = sid
         return jwt.encode(payload, current_app.config['JWT_SECRET_KEY'], algorithm='HS256')
 
     @staticmethod
-    def generate_refresh_token(user_id: int) -> str:
-        """Long-lived REFRESH token, used only to obtain a new access token."""
+    def generate_refresh_token(user_id: int, jti: str = None) -> str:
+        """Long-lived REFRESH token, used only to obtain a new access token.
+
+        `jti` is the UserSession's unique id — this is what makes a session
+        individually revocable (see routes/auth.py /auth/sessions).
+        """
         expires = current_app.config.get('JWT_REFRESH_TOKEN_EXPIRES',
                                           timedelta(days=7))
         payload = {
@@ -40,6 +50,8 @@ class TokenManager:
             'iat': datetime.utcnow(),
             'exp': datetime.utcnow() + expires
         }
+        if jti:
+            payload['jti'] = jti
         return jwt.encode(payload, current_app.config['JWT_SECRET_KEY'], algorithm='HS256')
     
     @staticmethod
@@ -91,6 +103,7 @@ def token_required(f):
         request.user_id = payload['user_id']
         request.user_email = payload['email']
         request.user_role = payload['role']
+        request.sid = payload.get('sid')      # which session/device issued this token
         
         return f(*args, **kwargs)
     

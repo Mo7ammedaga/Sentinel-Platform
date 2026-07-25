@@ -1,14 +1,20 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { authApi } from '../api/endpoints';
 import { apiError, API_BASE } from '../api/client';
-import { FullProfile } from '../types';
+import { useAuth } from '../auth/AuthContext';
+import { FullProfile, Session } from '../types';
 import { Card, Spinner, ErrorNote } from '../components/ui';
 
 const field =
   'w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none focus:border-accent';
 
 export function AccountPage() {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<FullProfile | null>(null);
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [revokingId, setRevokingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -29,11 +35,12 @@ export function AccountPage() {
 
   const load = async () => {
     try {
-      const p = await authApi.fullProfile();
+      const [p, s] = await Promise.all([authApi.fullProfile(), authApi.listSessions()]);
       setProfile(p);
       setFirstName(p.first_name);
       setLastName(p.last_name);
       setBio(p.bio || '');
+      setSessions(s);
     } catch (e) {
       setError(apiError(e));
     } finally {
@@ -41,6 +48,24 @@ export function AccountPage() {
     }
   };
   useEffect(() => { load(); }, []);
+
+  const revokeSession = async (s: Session) => {
+    setRevokingId(s.id);
+    try {
+      await authApi.revokeSession(s.id);
+      if (s.is_current) {
+        // We just signed this device out — finish the job locally.
+        logout();
+        navigate('/login');
+        return;
+      }
+      setSessions(await authApi.listSessions());
+    } catch (e) {
+      setError(apiError(e));
+    } finally {
+      setRevokingId(null);
+    }
+  };
 
   const saveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -180,6 +205,44 @@ export function AccountPage() {
             {pwSaved && <span className="text-xs text-emerald-400">{pwSaved}</span>}
           </div>
         </form>
+      </Card>
+
+      <Card>
+        <h2 className="mb-1 text-sm font-semibold text-slate-200">Sessions & devices</h2>
+        <p className="mb-3 text-xs text-muted">
+          Every device you've logged in from. Sign out anything you don't recognise.
+        </p>
+        {sessions.length === 0 ? (
+          <p className="text-sm text-muted">No active sessions.</p>
+        ) : (
+          <ul className="space-y-2">
+            {sessions.map((s) => (
+              <li key={s.id} className="flex items-center justify-between gap-3 rounded border border-slate-800 px-3 py-2">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 text-sm text-slate-200">
+                    {s.device}
+                    {s.is_current && (
+                      <span className="rounded border border-emerald-500/30 bg-emerald-500/15 px-1.5 py-0.5 text-[10px] text-emerald-400">
+                        this device
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-xs text-muted">
+                    {s.ip_address || 'unknown IP'} · last used{' '}
+                    {s.last_used_at ? new Date(s.last_used_at).toLocaleString() : 'never'}
+                  </div>
+                </div>
+                <button
+                  onClick={() => revokeSession(s)}
+                  disabled={revokingId === s.id}
+                  className="shrink-0 rounded border border-slate-700 px-2.5 py-1 text-xs text-slate-200 hover:bg-slate-800 disabled:opacity-60"
+                >
+                  {revokingId === s.id ? 'Signing out…' : 'Sign out'}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </Card>
     </div>
   );

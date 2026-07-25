@@ -8,19 +8,12 @@ from app.utils.event_logger import EventLogger
 from app.utils.validation import validate_body, validated_data
 from app.utils.constants import Roles
 from app.schemas.auth import RegisterRequest, ProfileUpdate, PasswordChange
-from app.services import profile_service
+from app.services import profile_service, session_service
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/v1/auth')
 
 # MVP is single-organization; new sign-ups join it.
 DEFAULT_ORG = 'org_001'
-
-
-def _tokens_for(user):
-    return {
-        'access_token': TokenManager.generate_token(user.id, user.email, user.role),
-        'refresh_token': TokenManager.generate_refresh_token(user.id),
-    }
 
 
 def _user_dict(user):
@@ -52,7 +45,7 @@ def register():
         action_type='register', resource_type='user',
         description='User registered')
 
-    tokens = _tokens_for(user)          # auto-login on signup
+    tokens = session_service.issue_tokens(user)   # auto-login on signup
     return jsonify({**tokens, 'token': tokens['access_token'],
                     'user': _user_dict(user)}), 201
 
@@ -87,20 +80,18 @@ def login():
     if not user:
         return jsonify({'error': 'Invalid email or password'}), 401
 
-    # Generate an access token (short-lived) and a refresh token (long-lived).
-    access_token = TokenManager.generate_token(user.id, user.email, user.role)
-    refresh_token = TokenManager.generate_refresh_token(user.id)
+    # Issue tokens AND record this as a revocable device session.
+    tokens = session_service.issue_tokens(user)
 
     # Every successful login is a meaningful event for behaviour analytics.
     EventLogger.log_event(
         user_id=user.id, organization_id=user.organization_id,
         action_type='login', resource_type='user',
         description='User logged in')
-    
+
     return jsonify({
-        'access_token': access_token,
-        'refresh_token': refresh_token,
-        'token': access_token,               # backward-compatible alias
+        **tokens,
+        'token': tokens['access_token'],     # backward-compatible alias
         'user': {
             'id': user.id,
             'email': user.email,
@@ -127,11 +118,15 @@ def refresh():
     if not payload or payload.get('type') != 'refresh':
         return jsonify({'error': 'Invalid or expired refresh token'}), 401
 
+    jti = payload.get('jti')
+    if not session_service.touch_session(jti):
+        return jsonify({'error': 'This session has been signed out'}), 401
+
     user = User.query.get(payload['user_id'])
     if not user or not user.is_active:
         return jsonify({'error': 'User not found or inactive'}), 401
 
-    access_token = TokenManager.generate_token(user.id, user.email, user.role)
+    access_token = TokenManager.generate_token(user.id, user.email, user.role, sid=jti)
     return jsonify({'access_token': access_token, 'token': access_token}), 200
 
 
@@ -205,3 +200,22 @@ def get_avatar(user_id):
         return jsonify({'error': 'No avatar'}), 404
     directory, name = os.path.split(disk_path)
     return send_from_directory(directory, name)
+
+
+@auth_bp.route('/sessions', methods=['GET'])
+@token_required
+def list_sessions():
+    """Your active device sessions — each one a distinct login (browser/device)."""
+    sessions = session_service.list_sessions(request.user_id, current_sid=request.sid)
+    return jsonify({'sessions': sessions}), 200
+
+
+@auth_bp.route('/sessions/<int:session_id>', methods=['DELETE'])
+@token_required
+def revoke_session(session_id):
+    """Sign out one device. Revoking the current session logs this device out
+    too, once its (already-issued) access token expires."""
+    ok, error = session_service.revoke_session(request.user_id, session_id)
+    if not ok:
+        return jsonify({'error': error}), 404
+    return jsonify({'id': session_id, 'revoked': True}), 200
