@@ -67,6 +67,6 @@ api.interceptors.response.use(
 );
 
 export function apiError(e: unknown): string {
-  const err = e as AxiosError<{ error?: string; details?: unknown }>;
-  return err.response?.data?.error || err.message || 'Request failed';
+  const err = e as AxiosError<{ error?: string; details?: unknown }> | null | undefined;
+  return err?.response?.data?.error || err?.message || 'Request failed';
 }
