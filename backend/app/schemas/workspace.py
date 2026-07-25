@@ -42,12 +42,6 @@ class TaskUpdate(BaseModel):
     priority: Optional[str] = Field(default=None, pattern='^(low|medium|high)$')
 
 
-class FileCreate(BaseModel):
-    task_id: int
-    filename: str = Field(min_length=1, max_length=255)
-    file_path: str = Field(min_length=1, max_length=500)
-
-
 class NoteCreate(BaseModel):
     task_id: int
     content: str = Field(min_length=1)

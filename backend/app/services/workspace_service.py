@@ -8,6 +8,12 @@ consistent for the frontend.
 Returns are (data, error) tuples: error is None on success, else a message and
 data is None (the route maps it to 404/400).
 """
+import os
+import uuid
+
+from flask import current_app
+from werkzeug.utils import secure_filename
+
 from app.extensions import db
 from app.models import (
     User, Workspace, Project, Task, File, Note, Message,
@@ -44,8 +50,9 @@ def s_task(t):
 
 
 def s_file(f):
+    # file_path is an internal on-disk name (uuid-based) — never exposed.
     return {'id': f.id, 'task_id': f.task_id, 'filename': f.filename,
-            'file_path': f.file_path, 'uploaded_by': f.uploaded_by,
+            'size_bytes': f.size_bytes, 'uploaded_by': f.uploaded_by,
             'created_at': f.created_at.isoformat() if f.created_at else None}
 
 
@@ -203,16 +210,42 @@ def delete_task(actor_id, task_id):
     return {'id': task_id, 'deleted': True}, None
 
 
-# --- Files (metadata; download is a first-class behavioural action) ----------
-def upload_file(actor_id, data):
-    task = Task.query.get(data['task_id'])
+# --- Files: REAL disk storage (upload/download move actual bytes) -----------
+def _upload_dir():
+    """UPLOAD_FOLDER if configured (tests use a temp dir), else
+    <instance>/uploads — instance/ is gitignored, so uploads are never
+    committed. Created on first use."""
+    path = current_app.config.get('UPLOAD_FOLDER') or os.path.join(
+        current_app.instance_path, 'uploads')
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
+def upload_file(actor_id, task_id, upload):
+    """Save an uploaded file to disk. `upload` is a werkzeug FileStorage
+    (request.files['file']) — the actual bytes the user selected on their
+    computer, not a typed-in filename."""
+    task = Task.query.get(task_id)
     if task is None:
         return None, 'Task not found'
-    f = File(task_id=task.id, filename=data['filename'],
-             file_path=data['file_path'], uploaded_by=actor_id)
+    if upload is None or not upload.filename:
+        return None, 'No file provided'
+
+    original_name = secure_filename(upload.filename) or 'file'
+    ext = os.path.splitext(original_name)[1]
+    # The on-disk name is a random UUID, never the user-supplied name — this is
+    # what makes path traversal / filename collisions structurally impossible.
+    stored_name = f'{uuid.uuid4().hex}{ext}'
+    disk_path = os.path.join(_upload_dir(), stored_name)
+    upload.save(disk_path)
+    size = os.path.getsize(disk_path)
+
+    f = File(task_id=task.id, filename=original_name, file_path=stored_name,
+             size_bytes=size, uploaded_by=actor_id)
     db.session.add(f)
     db.session.flush()
-    _emit(actor_id, 'upload_file', 'file', f.id, f'Uploaded "{f.filename}"')
+    _emit(actor_id, 'upload_file', 'file', f.id,
+          f'Uploaded "{f.filename}" ({size} bytes)')
     return s_file(f), None
 
 
@@ -223,12 +256,17 @@ def list_files(actor_id, task_id=None):
     return q.order_by(File.created_at.desc())
 
 
-def download_file(actor_id, file_id):
+def get_file_for_download(actor_id, file_id):
+    """Returns (File, absolute_disk_path, error). Logs the download as an
+    Event — a real download is a first-class behavioural action for the AI."""
     f = File.query.get(file_id)
     if f is None:
-        return None, 'File not found'
+        return None, None, 'File not found'
+    disk_path = os.path.join(_upload_dir(), f.file_path)
+    if not os.path.isfile(disk_path):
+        return None, None, 'File content not found on server'
     _emit(actor_id, 'download_file', 'file', f.id, f'Downloaded "{f.filename}"')
-    return s_file(f), None
+    return f, disk_path, None
 
 
 def delete_file(actor_id, file_id):
@@ -236,9 +274,12 @@ def delete_file(actor_id, file_id):
     if f is None:
         return None, 'File not found'
     name = f.filename
+    disk_path = os.path.join(_upload_dir(), f.file_path)
     db.session.delete(f)
     db.session.flush()
     _emit(actor_id, 'delete_file', 'file', file_id, f'Deleted "{name}"')
+    if os.path.isfile(disk_path):          # remove the bytes after the DB commit
+        os.remove(disk_path)
     return {'id': file_id, 'deleted': True}, None
 
 

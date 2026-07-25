@@ -9,7 +9,7 @@ from app.extensions import db
 from app.models import (
     Event, AIAnalysis, Alert, Investigation, RiskScore, User,
 )
-from app.ai import analyze_user_events, MODEL_VERSION
+from app.ai import analyze_user_events, MODEL_VERSION, MIN_HISTORY
 from app.utils.constants import AlertStatus, InvestigationState
 
 
@@ -139,6 +139,10 @@ def open_investigation(alert_id, analyst_id):
     alert = Alert.query.get(alert_id)
     if alert is None:
         return None, 'Alert not found'
+    existing = Investigation.query.filter_by(
+        alert_id=alert_id, state=InvestigationState.INVESTIGATING).first()
+    if existing:
+        return existing, None    # idempotent: don't spawn a duplicate
     investigation = Investigation(
         alert_id=alert.id, analyst_id=analyst_id,
         organization_id=alert.organization_id,
@@ -165,6 +169,33 @@ def transition_investigation(investigation_id, new_state, notes=None):
             alert.status = AlertStatus.CLOSED
     db.session.commit()
     return inv, None
+
+
+def baseline_coverage(org_id):
+    """Per-user event counts vs the AI's minimum baseline (MIN_HISTORY).
+
+    A user below the threshold NEVER produces an alert, no matter how they
+    behave — analyze_user_events() forces 'insufficient_data' -> status
+    'normal'. Without this, an analyst has no way to tell "this person is
+    behaving normally" apart from "the AI hasn't seen enough of them yet" —
+    they just see nothing in Alerts. Least-covered users first.
+    """
+    users = User.query.filter_by(organization_id=org_id).all()
+    if not users:
+        return []
+    user_ids = [u.id for u in users]
+    counts = dict(
+        db.session.query(Event.user_id, db.func.count(Event.id))
+        .filter(Event.user_id.in_(user_ids))
+        .group_by(Event.user_id).all()
+    )
+    result = [{
+        'user_id': u.id, 'email': u.email, 'name': u.get_full_name(),
+        'role': u.role, 'event_count': counts.get(u.id, 0),
+        'required': MIN_HISTORY, 'ready': counts.get(u.id, 0) >= MIN_HISTORY,
+    } for u in users]
+    result.sort(key=lambda r: r['event_count'])
+    return result
 
 
 def high_risk_users(limit=20):

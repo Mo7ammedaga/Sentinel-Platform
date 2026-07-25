@@ -4,7 +4,9 @@ Thin routes only — validate the body (pydantic), enforce RBAC, call the
 service, shape the response. All business logic and event emission live in
 workspace_service. Errors flow through the centralized handler.
 """
-from flask import Blueprint, request, jsonify
+import os
+
+from flask import Blueprint, request, jsonify, send_from_directory
 
 from app.services import workspace_service as ws
 from app.utils.auth import token_required
@@ -14,7 +16,7 @@ from app.utils.api import paginate, paginated
 from app.utils.validation import validate_body, validated_data
 from app.schemas.workspace import (
     WorkspaceCreate, ProjectCreate, ProjectUpdate, TaskCreate, TaskUpdate,
-    FileCreate, NoteCreate, NoteUpdate, MessageCreate,
+    NoteCreate, NoteUpdate, MessageCreate,
 )
 
 workspace_bp = Blueprint('workspace', __name__, url_prefix='/api/v1')
@@ -125,13 +127,18 @@ def delete_task(task_id):
     return _result(*ws.delete_task(request.user_id, task_id))
 
 
-# --- Files -------------------------------------------------------------------
+# --- Files: real upload (multipart) / download (actual bytes) ---------------
 @workspace_bp.route('/files', methods=['POST'])
 @token_required
 @role_required(*WORKSPACE_ROLES)
-@validate_body(FileCreate)
 def upload_file():
-    return _result(*ws.upload_file(request.user_id, validated_data()), ok_code=201)
+    """multipart/form-data: 'task_id' field + 'file' (the real file picked on
+    the user's device). Not JSON — an actual file has actual bytes."""
+    task_id = request.form.get('task_id', type=int)
+    upload = request.files.get('file')
+    if not task_id or upload is None or not upload.filename:
+        return jsonify({'error': 'task_id and file are required'}), 400
+    return _result(*ws.upload_file(request.user_id, task_id, upload), ok_code=201)
 
 
 @workspace_bp.route('/files', methods=['GET'])
@@ -143,11 +150,17 @@ def list_files():
     return jsonify(paginated(page, [ws.s_file(f) for f in page.items])), 200
 
 
-@workspace_bp.route('/files/<int:file_id>/download', methods=['POST'])
+@workspace_bp.route('/files/<int:file_id>/download', methods=['GET'])
 @token_required
 @role_required(*WORKSPACE_ROLES)
 def download_file(file_id):
-    return _result(*ws.download_file(request.user_id, file_id))
+    """Streams the ACTUAL file bytes back (not just metadata)."""
+    f, disk_path, error = ws.get_file_for_download(request.user_id, file_id)
+    if error:
+        return jsonify({'error': error}), 404
+    directory, stored_name = os.path.split(disk_path)
+    return send_from_directory(directory, stored_name, as_attachment=True,
+                               download_name=f.filename)
 
 
 @workspace_bp.route('/files/<int:file_id>', methods=['DELETE'])

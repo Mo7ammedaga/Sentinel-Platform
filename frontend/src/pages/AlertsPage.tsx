@@ -92,13 +92,16 @@ export function AlertsPage() {
                   risk {a.risk_score.toFixed(0)} · {new Date(a.created_at).toLocaleString()}
                 </div>
               </div>
-              {a.status !== 'closed' && (
+              {a.status === 'open' && (
                 <button
                   onClick={() => openInvestigation(a)}
                   className="shrink-0 rounded border border-slate-700 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-800"
                 >
                   Investigate
                 </button>
+              )}
+              {a.status === 'investigating' && (
+                <span className="shrink-0 text-xs text-muted">already being investigated</span>
               )}
             </Card>
           ))}

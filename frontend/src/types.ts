@@ -40,6 +40,16 @@ export interface Investigation {
   closed_at: string | null;
 }
 
+export interface BaselineCoverage {
+  user_id: number;
+  email: string;
+  name: string;
+  role: Role;
+  event_count: number;
+  required: number;
+  ready: boolean;
+}
+
 export interface HighRiskUser {
   user_id: number;
   email: string | null;
@@ -86,7 +96,9 @@ export interface Task {
   status: string; priority: string;
 }
 export interface Note { id: number; task_id: number; content: string; created_at: string; }
-export interface FileItem { id: number; task_id: number; filename: string; file_path: string; }
+export interface FileItem {
+  id: number; task_id: number; filename: string; size_bytes: number | null;
+}
 export interface DirectoryUser { id: number; name: string; role: string; }
 export interface AppNotification {
   id: number; type: string; title: string; body: string | null;

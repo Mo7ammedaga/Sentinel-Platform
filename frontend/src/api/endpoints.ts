@@ -1,8 +1,8 @@
-import { api } from './client';
+import { api, API_BASE, tokenStore } from './client';
 import {
   Alert, DashboardStats, HighRiskUser, Investigation, Paginated, User, UserEvent,
   Workspace, Project, Task, Note, FileItem, DirectoryUser, Message,
-  AppNotification, SearchResults, ManagedUser, Role,
+  AppNotification, SearchResults, ManagedUser, Role, BaselineCoverage,
 } from '../types';
 
 interface AuthResponse { access_token: string; refresh_token: string; user: User; }
@@ -28,6 +28,8 @@ export const securityApi = {
     }).then((r) => r.data),
   highRiskUsers: () =>
     api.get<{ users: HighRiskUser[] }>('/security/high-risk-users').then((r) => r.data.users),
+  baselineCoverage: () =>
+    api.get<{ users: BaselineCoverage[] }>('/security/baseline-coverage').then((r) => r.data.users),
   openInvestigation: (alertId: number) =>
     api.post<Investigation>(`/security/alerts/${alertId}/investigations`).then((r) => r.data),
   updateInvestigation: (id: number, state: string, notes?: string) =>
@@ -65,10 +67,34 @@ export const workspaceApi = {
   listFiles: (task_id: number) =>
     api.get<Paginated<FileItem>>('/files', { params: { task_id, per_page: 100 } })
       .then((r) => r.data.items),
-  uploadFile: (task_id: number, filename: string) =>
-    api.post<FileItem>('/files', { task_id, filename, file_path: `/uploads/${filename}` })
-      .then((r) => r.data),
-  downloadFile: (id: number) => api.post(`/files/${id}/download`).then((r) => r.data),
+
+  // Real upload: sends the ACTUAL file the user picked on their device.
+  uploadFile: (task_id: number, file: File) => {
+    const form = new FormData();
+    form.append('task_id', String(task_id));
+    form.append('file', file);
+    return api.post<FileItem>('/files', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then((r) => r.data);
+  },
+
+  // Real download: fetches the actual bytes and saves them via the browser
+  // (axios' client isn't used here because we need the raw Blob response, not
+  // JSON — same auth-header pattern as MyDataPage's event export).
+  downloadFile: async (id: number, filename: string) => {
+    const res = await fetch(`${API_BASE}/api/v1/files/${id}/download`, {
+      headers: { Authorization: `Bearer ${tokenStore.access()}` },
+    });
+    if (!res.ok) throw new Error('Download failed');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
+  deleteFile: (id: number) => api.delete(`/files/${id}`).then((r) => r.data),
 };
 
 // Team chat (direct messages between colleagues).

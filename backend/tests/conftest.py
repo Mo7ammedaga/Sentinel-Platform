@@ -5,6 +5,7 @@ Each test gets a fresh app bound to a throwaway file-based SQLite DB (file, not
 with three seeded users covering the roles we need.
 """
 import os
+import shutil
 import tempfile
 from datetime import datetime, timedelta
 
@@ -37,9 +38,11 @@ def _seed_users():
 @pytest.fixture
 def app():
     fd, path = tempfile.mkstemp(suffix='.db')
+    upload_dir = tempfile.mkdtemp(prefix='sentinel-test-uploads-')
 
     class Cfg(TestingConfig):
         SQLALCHEMY_DATABASE_URI = f'sqlite:///{path}'
+        UPLOAD_FOLDER = upload_dir           # never touch real instance/uploads
 
     application = create_app(Cfg)
     with application.app_context():
@@ -50,6 +53,7 @@ def app():
         _db.drop_all()
     os.close(fd)
     os.unlink(path)
+    shutil.rmtree(upload_dir, ignore_errors=True)
 
 
 @pytest.fixture

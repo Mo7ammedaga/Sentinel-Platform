@@ -11,6 +11,12 @@ const btn =
 const ghost =
   'rounded border border-slate-700 px-2.5 py-1 text-xs text-slate-200 hover:bg-slate-800';
 
+function formatBytes(n: number): string {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export function WorkspacePage() {
   const [workspaceId, setWorkspaceId] = useState<number | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -24,7 +30,7 @@ export function WorkspacePage() {
   const [newProject, setNewProject] = useState('');
   const [newTask, setNewTask] = useState('');
   const [newNote, setNewNote] = useState('');
-  const [newFile, setNewFile] = useState('');
+  const [newFile, setNewFile] = useState<File | null>(null);
 
   const fail = (e: unknown) => setError(apiError(e));
 
@@ -89,12 +95,19 @@ export function WorkspacePage() {
     catch (e) { fail(e); }
   };
   const addFile = async () => {
-    if (!newFile.trim() || !task) return;
-    try { await workspaceApi.uploadFile(task.id, newFile.trim()); setNewFile(''); setFiles(await workspaceApi.listFiles(task.id)); }
-    catch (e) { fail(e); }
+    if (!newFile || !task) return;
+    try {
+      await workspaceApi.uploadFile(task.id, newFile);
+      setNewFile(null);
+      setFiles(await workspaceApi.listFiles(task.id));
+    } catch (e) { fail(e); }
   };
   const download = async (f: FileItem) => {
-    try { await workspaceApi.downloadFile(f.id); } catch (e) { fail(e); }
+    try { await workspaceApi.downloadFile(f.id, f.filename); } catch (e) { fail(e); }
+  };
+  const removeFile = async (f: FileItem) => {
+    try { await workspaceApi.deleteFile(f.id); setFiles(await workspaceApi.listFiles(task!.id)); }
+    catch (e) { fail(e); }
   };
 
   if (loading) return <Spinner />;
@@ -188,16 +201,27 @@ export function WorkspacePage() {
               </div>
               <div>
                 <div className="mb-1 text-xs uppercase text-muted">Files</div>
-                <div className="mb-2 flex gap-2">
-                  <input className={input} placeholder="filename.pdf" value={newFile}
-                         onChange={(e) => setNewFile(e.target.value)} />
-                  <button className={btn} onClick={addFile}>Upload</button>
+                <div className="mb-2 flex items-center gap-2">
+                  <input
+                    type="file"
+                    onChange={(e) => setNewFile(e.target.files?.[0] ?? null)}
+                    className="w-full text-xs text-slate-300 file:mr-2 file:rounded file:border-0 file:bg-slate-700 file:px-2 file:py-1 file:text-xs file:text-slate-200"
+                  />
+                  <button className={btn} onClick={addFile} disabled={!newFile}>Upload</button>
                 </div>
                 <ul className="space-y-1 text-sm">
                   {files.map((f) => (
                     <li key={f.id} className="flex items-center justify-between rounded bg-slate-800/40 px-2 py-1">
-                      <span className="text-slate-300">{f.filename}</span>
-                      <button className={ghost} onClick={() => download(f)}>download</button>
+                      <span className="text-slate-300">
+                        {f.filename}{' '}
+                        {f.size_bytes != null && (
+                          <span className="text-xs text-muted">({formatBytes(f.size_bytes)})</span>
+                        )}
+                      </span>
+                      <span className="flex gap-1">
+                        <button className={ghost} onClick={() => download(f)}>download</button>
+                        <button className={ghost} onClick={() => removeFile(f)}>delete</button>
+                      </span>
                     </li>
                   ))}
                 </ul>
