@@ -161,13 +161,46 @@ Benefits include:
 
 Future versions may include:
 
-- Cloud deployment
 - Load balancing
 - Multiple application servers
 - CI/CD pipeline
 - Container orchestration
 
 The deployment architecture should support these improvements without major redesign.
+
+---
+
+# Production Deployment (Render) — current, actual setup
+
+Cloud deployment happened before this document was updated to say so. As
+actually run today:
+
+- **Backend** — Render Web Service. Build: `pip install -r requirements.txt`.
+  Start: `sh entrypoint.sh` (runs `flask db upgrade`, then gunicorn with the
+  gevent-websocket worker — see `backend/entrypoint.sh`).
+- **Database** — a Render-managed PostgreSQL instance, connected via
+  `DATABASE_URL`.
+- **Frontend** — Render Static Site, built from `frontend/` with
+  `REACT_APP_API_URL` pointed at the backend service's URL.
+
+## Required environment variables (backend Web Service)
+
+Set these in the Render service's Environment tab — there is no
+`render.yaml` in this repo, so they are not version-controlled and must be
+set by hand per environment:
+
+| Variable | Required | Notes |
+|---|---|---|
+| `SENTINEL_ENVIRONMENT` | yes | `production` |
+| `DATABASE_URL` | yes | provided by Render's Postgres add-on |
+| `SECRET_KEY`, `JWT_SECRET_KEY` | yes | app refuses to start with the built-in dev defaults in production |
+| `CORS_ORIGINS` | yes | the frontend Static Site's URL |
+| `DEFAULT_ADMIN_EMAIL`, `DEFAULT_ADMIN_PASSWORD` | yes | bootstrap admin account, seeded once by migration `48b247de5e75`; the migration (and therefore the deploy) fails without these in production — see the root README's "Getting started" section |
+
+A fresh database gets its schema **and** its one bootstrap admin account from
+the same `flask db upgrade` step — there is no separate seed script to run
+and no manual database step required beyond setting the environment
+variables above before the first deploy.
 
 ---
 
