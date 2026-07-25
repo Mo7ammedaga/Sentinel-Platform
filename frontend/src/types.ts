@@ -7,6 +7,14 @@ export interface User {
   role: Role;
 }
 
+export interface FullProfile extends User {
+  first_name: string;
+  last_name: string;
+  organization: string;
+  bio: string | null;
+  avatar_url: string | null;
+}
+
 export interface DashboardStats {
   total_events: number;
   critical: number;

@@ -1,11 +1,14 @@
-from flask import Blueprint, request, jsonify
+import os
+
+from flask import Blueprint, request, jsonify, send_from_directory
 from app.models import User
 from app.extensions import db, limiter
 from app.utils.auth import TokenManager, token_required
 from app.utils.event_logger import EventLogger
 from app.utils.validation import validate_body, validated_data
 from app.utils.constants import Roles
-from app.schemas.auth import RegisterRequest
+from app.schemas.auth import RegisterRequest, ProfileUpdate, PasswordChange
+from app.services import profile_service
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/v1/auth')
 
@@ -132,17 +135,73 @@ def refresh():
     return jsonify({'access_token': access_token, 'token': access_token}), 200
 
 
+def _full_profile_dict(user):
+    return {
+        'id': user.id,
+        'email': user.email,
+        'name': user.get_full_name(),
+        'first_name': user.first_name,
+        'last_name': user.last_name,
+        'role': user.role,
+        'organization': user.organization_id,
+        'bio': user.bio,
+        'avatar_url': f'/api/v1/auth/avatar/{user.id}' if user.avatar_path else None,
+    }
+
+
 @auth_bp.route('/profile', methods=['GET'])
 @token_required
 def profile():
-    """Protected route — returns the current user's profile."""
+    """Protected route — returns the current user's full profile."""
     user = User.query.get(request.user_id)
-    return jsonify({
-        'user': {
-            'id': user.id,
-            'email': user.email,
-            'name': user.get_full_name(),
-            'role': user.role,
-            'organization': user.organization_id,
-        }
-    }), 200
+    return jsonify({'user': _full_profile_dict(user)}), 200
+
+
+@auth_bp.route('/profile', methods=['PATCH'])
+@token_required
+@validate_body(ProfileUpdate)
+def update_profile():
+    """Update your own name/bio. Email and role are never editable here."""
+    user = User.query.get(request.user_id)
+    user = profile_service.update_profile(user, validated_data())
+    return jsonify({'user': _full_profile_dict(user)}), 200
+
+
+@auth_bp.route('/change-password', methods=['POST'])
+@token_required
+@limiter.limit("5 per minute")
+@validate_body(PasswordChange)
+def change_password():
+    user = User.query.get(request.user_id)
+    data = validated_data()
+    ok, error = profile_service.change_password(
+        user, data['current_password'], data['new_password'])
+    if not ok:
+        return jsonify({'error': error}), 400
+    return jsonify({'message': 'Password updated'}), 200
+
+
+@auth_bp.route('/avatar', methods=['POST'])
+@token_required
+def upload_avatar():
+    """multipart/form-data: 'file' — the real image picked on the user's device."""
+    user = User.query.get(request.user_id)
+    upload = request.files.get('file')
+    user, error = profile_service.save_avatar(user, upload)
+    if error:
+        return jsonify({'error': error}), 400
+    return jsonify({'user': _full_profile_dict(user)}), 200
+
+
+@auth_bp.route('/avatar/<int:user_id>', methods=['GET'])
+def get_avatar(user_id):
+    """Serves the actual image bytes. Deliberately NOT token_required — a
+    profile photo isn't sensitive, and this lets plain <img src> tags work."""
+    user = User.query.get(user_id)
+    if user is None or not user.avatar_path:
+        return jsonify({'error': 'No avatar'}), 404
+    disk_path = profile_service.avatar_disk_path(user.avatar_path)
+    if not os.path.isfile(disk_path):
+        return jsonify({'error': 'No avatar'}), 404
+    directory, name = os.path.split(disk_path)
+    return send_from_directory(directory, name)

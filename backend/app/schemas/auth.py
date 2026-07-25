@@ -1,4 +1,6 @@
 """Request schemas for authentication."""
+from typing import Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -13,3 +15,14 @@ class RegisterRequest(BaseModel):
 
 class RoleUpdate(BaseModel):
     role: str = Field(pattern=r'^(employee|manager|analyst|admin)$')
+
+
+class ProfileUpdate(BaseModel):
+    first_name: Optional[str] = Field(default=None, min_length=1, max_length=100)
+    last_name: Optional[str] = Field(default=None, min_length=1, max_length=100)
+    bio: Optional[str] = Field(default=None, max_length=500)
+
+
+class PasswordChange(BaseModel):
+    current_password: str = Field(min_length=1)
+    new_password: str = Field(min_length=8, max_length=128)

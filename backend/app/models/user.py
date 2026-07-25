@@ -14,6 +14,8 @@ class User(db.Model):
     first_name = db.Column(db.String(100), nullable=False)
     last_name = db.Column(db.String(100), nullable=False)
     role = db.Column(db.String(50), nullable=False, default='employee')
+    bio = db.Column(db.Text)
+    avatar_path = db.Column(db.String(255))   # on-disk stored name (uuid-based)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

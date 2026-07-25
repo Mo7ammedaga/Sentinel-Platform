@@ -2,7 +2,7 @@ import { api, API_BASE, tokenStore } from './client';
 import {
   Alert, DashboardStats, HighRiskUser, Investigation, Paginated, User, UserEvent,
   Workspace, Project, Task, Note, FileItem, DirectoryUser, Message,
-  AppNotification, SearchResults, ManagedUser, Role, BaselineCoverage,
+  AppNotification, SearchResults, ManagedUser, Role, BaselineCoverage, FullProfile,
 } from '../types';
 
 interface AuthResponse { access_token: string; refresh_token: string; user: User; }
@@ -17,6 +17,19 @@ export const authApi = {
   register: (input: RegisterInput) =>
     api.post<AuthResponse>('/auth/register', input).then((r) => r.data),
   profile: () => api.get<{ user: User }>('/auth/profile').then((r) => r.data.user),
+
+  fullProfile: () => api.get<{ user: FullProfile }>('/auth/profile').then((r) => r.data.user),
+  updateProfile: (data: Partial<{ first_name: string; last_name: string; bio: string }>) =>
+    api.patch<{ user: FullProfile }>('/auth/profile', data).then((r) => r.data.user),
+  changePassword: (current_password: string, new_password: string) =>
+    api.post('/auth/change-password', { current_password, new_password }).then((r) => r.data),
+  uploadAvatar: (file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return api.post<{ user: FullProfile }>('/auth/avatar', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then((r) => r.data.user);
+  },
 };
 
 export const securityApi = {

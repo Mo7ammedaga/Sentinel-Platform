@@ -76,6 +76,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           {security && link('/dashboard', 'Security Dashboard')}
           {security && link('/alerts', 'Alerts')}
           {admin && link('/admin/users', 'User Management')}
+          {link('/account', 'My Account')}
           {link('/my-data', 'My Data')}
           {link('/privacy', 'Privacy Notice')}
         </nav>
