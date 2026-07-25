@@ -9,7 +9,7 @@ import { useToast } from './Toast';
 import { AdminSummary, IncidentAction, IncidentActionType, IncidentDetail, IncidentSeverity } from '../types';
 import { Modal } from './Modal';
 import { Button } from './Button';
-import { Select, Textarea } from './Field';
+import { Select, Textarea, Input } from './Field';
 import { Avatar, Badge, ErrorNote, Spinner } from './ui';
 
 function formatBytes(n: number): string {
@@ -71,8 +71,10 @@ export function IncidentDetailModal({ investigationId, onClose, onChanged }: {
       await load();
       onChanged();
       if (successMsg) show(successMsg, 'success');
+      return true;
     } catch (e) {
       setError(apiError(e));
+      return false;
     } finally {
       setBusy(null);
     }
@@ -81,10 +83,14 @@ export function IncidentDetailModal({ investigationId, onClose, onChanged }: {
   const changeSeverity = (severity: IncidentSeverity) =>
     run('severity', () => securityApi.setSeverity(investigationId, severity));
 
-  const submitEscalate = () => {
+  const submitEscalate = async () => {
     if (!escalateTo) return;
-    run('escalate', () => securityApi.escalate(investigationId, Number(escalateTo), escalateNote || undefined),
-      'Incident escalated.').then(() => { setEscalateOpen(false); setEscalateNote(''); setEscalateTo(''); });
+    const ok = await run('escalate',
+      () => securityApi.escalate(investigationId, Number(escalateTo), escalateNote || undefined),
+      'Incident escalated.');
+    // Only clear the form on success — on failure the analyst's selection
+    // and note must survive so they can retry without redoing it.
+    if (ok) { setEscalateOpen(false); setEscalateNote(''); setEscalateTo(''); }
   };
 
   const transition = (state: string) =>
@@ -92,16 +98,18 @@ export function IncidentDetailModal({ investigationId, onClose, onChanged }: {
       investigationId, state, undefined, state === 'closed' ? resolutionSummary : undefined),
       `Marked ${state.replace('_', ' ')}.`);
 
-  const addAction = () => {
+  const addAction = async () => {
     if (!newActionDesc.trim()) return;
-    run('action', () => securityApi.addAction(investigationId, newActionType, newActionDesc.trim()))
-      .then(() => setNewActionDesc(''));
+    const ok = await run('action', () => securityApi.addAction(investigationId, newActionType, newActionDesc.trim()));
+    if (ok) setNewActionDesc('');
   };
 
-  const uploadEvidence = () => {
+  const uploadEvidence = async () => {
     if (!newEvidenceFile) return;
-    run('evidence', () => securityApi.uploadEvidence(investigationId, newEvidenceFile, newEvidenceDesc || undefined),
-      'Evidence attached.').then(() => { setNewEvidenceFile(null); setNewEvidenceDesc(''); });
+    const ok = await run('evidence',
+      () => securityApi.uploadEvidence(investigationId, newEvidenceFile, newEvidenceDesc || undefined),
+      'Evidence attached.');
+    if (ok) { setNewEvidenceFile(null); setNewEvidenceDesc(''); }
   };
 
   const downloadEvidence = async (id: number, filename: string) => {
@@ -168,6 +176,10 @@ export function IncidentDetailModal({ investigationId, onClose, onChanged }: {
             </div>
           ) : readOnly ? (
             <p className="text-xs text-surface-600">Not escalated.</p>
+          ) : admins.length === 0 ? (
+            <p className="text-xs text-surface-600">
+              No other administrators in this organization to escalate to.
+            </p>
           ) : escalateOpen ? (
             <div className="space-y-2">
               <Select value={escalateTo} onChange={(e) => setEscalateTo(e.target.value ? Number(e.target.value) : '')}>
@@ -204,12 +216,12 @@ export function IncidentDetailModal({ investigationId, onClose, onChanged }: {
                 <option value="remediation">Remediation</option>
                 <option value="note">Note</option>
               </Select>
-              <input
+              <Input
                 value={newActionDesc}
                 onChange={(e) => setNewActionDesc(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && addAction()}
                 placeholder="Describe the action taken…"
-                className="w-full rounded-lg border border-surface-700 bg-surface-800/80 px-3 py-1.5 text-xs text-surface-100 outline-none placeholder:text-surface-500 focus:border-primary-500"
+                className="py-1.5 text-xs"
               />
               <Button size="sm" loading={busy === 'action'} disabled={!newActionDesc.trim()} onClick={addAction}>
                 Log
@@ -247,9 +259,9 @@ export function IncidentDetailModal({ investigationId, onClose, onChanged }: {
             <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center">
               <input type="file" onChange={(e) => setNewEvidenceFile(e.target.files?.[0] ?? null)}
                      className="w-full text-xs text-surface-400 file:mr-2 file:rounded-md file:border-0 file:bg-surface-700 file:px-2.5 file:py-1.5 file:text-xs file:text-surface-200" />
-              <input value={newEvidenceDesc} onChange={(e) => setNewEvidenceDesc(e.target.value)}
+              <Input value={newEvidenceDesc} onChange={(e) => setNewEvidenceDesc(e.target.value)}
                      placeholder="Caption (optional)"
-                     className="w-full rounded-lg border border-surface-700 bg-surface-800/80 px-3 py-1.5 text-xs text-surface-100 outline-none placeholder:text-surface-500 focus:border-primary-500 sm:w-40" />
+                     className="py-1.5 text-xs sm:w-40" />
               <Button size="sm" loading={busy === 'evidence'} disabled={!newEvidenceFile} onClick={uploadEvidence}
                       icon={<Upload className="h-3 w-3" />}>
                 Attach

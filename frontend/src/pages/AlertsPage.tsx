@@ -42,11 +42,20 @@ export function AlertsPage() {
   useEffect(() => { load(); }, [load]);
 
   const openInvestigation = async (alert: Alert) => {
-    setSelected(alert);
-    setNotes('');
+    setError('');
     try {
+      // Idempotent server-side: an alert already being investigated resumes
+      // the SAME investigation rather than starting a new one.
       const inv = await securityApi.openInvestigation(alert.id);
-      setInvestigationId(inv.id);
+      if (RESPONSE_PHASE_STATES.includes(inv.state as (typeof RESPONSE_PHASE_STATES)[number])) {
+        // Already past the verdict — this is a case file now, not a quick
+        // pre-verdict transition.
+        setIncidentId(inv.id);
+      } else {
+        setSelected(alert);
+        setNotes(inv.notes || '');
+        setInvestigationId(inv.id);
+      }
       await load();
     } catch (e) {
       setError(apiError(e));
@@ -142,7 +151,10 @@ export function AlertsPage() {
                 </Button>
               )}
               {a.status === 'investigating' && (
-                <span className="shrink-0 text-xs text-surface-600">already being investigated</span>
+                <Button size="sm" variant="ghost" icon={<ShieldAlert className="h-3.5 w-3.5" />}
+                        onClick={() => openInvestigation(a)}>
+                  Continue
+                </Button>
               )}
             </Card>
           ))}
