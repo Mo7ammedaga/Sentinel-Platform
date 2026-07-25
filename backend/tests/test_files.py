@@ -60,6 +60,19 @@ def test_delete_removes_file_from_disk_and_db(client, manager_headers):
     assert client.get(f'/api/v1/files/{fid}/download', headers=manager_headers).status_code == 404
 
 
+def test_deleting_task_cascades_to_its_files(client, manager_headers):
+    """Regression: deleting a task must not orphan its files (real bytes on
+    disk + rows referencing a task_id that no longer exists)."""
+    tid = _make_task(client, manager_headers)
+    up = client.post('/api/v1/files',
+                     data={'task_id': str(tid), 'file': (io.BytesIO(b'x'), 'a.txt')},
+                     content_type='multipart/form-data', headers=manager_headers)
+    fid = up.get_json()['id']
+
+    assert client.delete(f'/api/v1/tasks/{tid}', headers=manager_headers).status_code == 200
+    assert client.get(f'/api/v1/files/{fid}/download', headers=manager_headers).status_code == 404
+
+
 def test_upload_and_download_each_emit_one_event(client, manager_headers, app):
     tid = _make_task(client, manager_headers)
     with app.app_context():

@@ -204,9 +204,22 @@ def delete_task(actor_id, task_id):
     if t is None:
         return None, 'Task not found'
     title = t.title
+
+    # Deleting a task must take its notes and files with it — otherwise their
+    # rows (and, for files, real bytes on disk) become orphaned garbage that
+    # nothing ever cleans up.
+    task_files = File.query.filter_by(task_id=task_id).all()
+    disk_paths = [os.path.join(_upload_dir(), f.file_path) for f in task_files]
+    File.query.filter_by(task_id=task_id).delete(synchronize_session=False)
+    Note.query.filter_by(task_id=task_id).delete(synchronize_session=False)
+
     db.session.delete(t)
     db.session.flush()
     _emit(actor_id, 'delete_task', 'task', task_id, f'Deleted task "{title}"')
+
+    for p in disk_paths:               # remove real bytes after the commit
+        if os.path.isfile(p):
+            os.remove(p)
     return {'id': task_id, 'deleted': True}, None
 
 
