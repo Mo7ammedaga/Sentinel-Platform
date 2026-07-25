@@ -8,6 +8,7 @@ import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { AlertsPage } from './pages/AlertsPage';
+import { IncidentsPage } from './pages/IncidentsPage';
 import { MyDataPage } from './pages/MyDataPage';
 import { AccountPage } from './pages/AccountPage';
 import { PrivacyPage } from './pages/PrivacyPage';
@@ -41,6 +42,7 @@ export default function App() {
             <Route path="/notifications" element={<Shell><NotificationsPage /></Shell>} />
             <Route path="/dashboard" element={<Shell requireSecurity><DashboardPage /></Shell>} />
             <Route path="/alerts" element={<Shell requireSecurity><AlertsPage /></Shell>} />
+            <Route path="/incidents" element={<Shell requireSecurity><IncidentsPage /></Shell>} />
             <Route path="/admin/users" element={<Shell requireAdmin><UserManagementPage /></Shell>} />
             <Route path="/account" element={<Shell><AccountPage /></Shell>} />
             <Route path="/my-data" element={<Shell><MyDataPage /></Shell>} />

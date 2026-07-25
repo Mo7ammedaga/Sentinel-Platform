@@ -10,6 +10,8 @@ import { Select, Textarea } from '../components/Field';
 import { Button } from '../components/Button';
 import { Modal } from '../components/Modal';
 import { CardSkeleton } from '../components/Skeleton';
+import { IncidentDetailModal } from '../components/IncidentDetailModal';
+import { RESPONSE_PHASE_STATES } from '../types';
 
 export function AlertsPage() {
   const { show } = useToast();
@@ -22,6 +24,7 @@ export function AlertsPage() {
   const [notes, setNotes] = useState('');
   const [transitioning, setTransitioning] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
+  const [incidentId, setIncidentId] = useState<number | null>(null);
   const severityFilter = searchParams.get('severity') || '';
 
   const load = useCallback(async () => {
@@ -55,10 +58,18 @@ export function AlertsPage() {
     setTransitioning(true);
     try {
       await securityApi.updateInvestigation(investigationId, state, notes);
+      const openedIncident = RESPONSE_PHASE_STATES.includes(
+        state as (typeof RESPONSE_PHASE_STATES)[number]);
       setSelected(null);
+      if (openedIncident) {
+        // Confirming a real threat opens the incident-response case file —
+        // the workflow continues, it doesn't just close here.
+        setIncidentId(investigationId);
+      } else {
+        show(`Investigation marked ${state.replace('_', ' ')}.`, 'success');
+      }
       setInvestigationId(null);
       await load();
-      show(`Investigation marked ${state.replace('_', ' ')}.`, 'success');
     } catch (e) {
       setError(apiError(e));
     } finally {
@@ -144,7 +155,10 @@ export function AlertsPage() {
         title={selected ? `Investigation · ${selected.title}` : ''}
         footer={
           <div className="flex flex-wrap gap-2">
-            {INVESTIGATION_STATES.filter((s) => s !== 'open').map((s) => (
+            {/* Pre-verdict states only — Containing/Resolved/Closed belong to
+                the incident-response case file, opened once confirmed. */}
+            {INVESTIGATION_STATES.filter((s) =>
+              !['open', 'containing', 'resolved', 'closed'].includes(s)).map((s) => (
               <button
                 key={s}
                 disabled={transitioning}
@@ -167,6 +181,14 @@ export function AlertsPage() {
           rows={4}
         />
       </Modal>
+
+      {incidentId != null && (
+        <IncidentDetailModal
+          investigationId={incidentId}
+          onClose={() => setIncidentId(null)}
+          onChanged={load}
+        />
+      )}
     </div>
   );
 }

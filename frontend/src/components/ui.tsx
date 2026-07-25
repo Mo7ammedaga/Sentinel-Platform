@@ -57,11 +57,18 @@ export function Badge({ status, dot = false }: { status: string; dot?: boolean }
     closed: 'bg-surface-500/15 text-surface-400 border-surface-500/30',
     confirmed: 'bg-danger-500/15 text-danger-400 border-danger-500/30',
     false_positive: 'bg-success-500/15 text-success-400 border-success-500/30',
+    containing: 'bg-warning-500/15 text-warning-400 border-warning-500/30',
+    resolved: 'bg-primary-500/15 text-primary-400 border-primary-500/30',
+    low: 'bg-surface-500/15 text-surface-400 border-surface-500/30',
+    medium: 'bg-warning-500/15 text-warning-400 border-warning-500/30',
+    high: 'bg-danger-500/15 text-danger-400 border-danger-500/30',
   };
   const dotColor: Record<string, string> = {
     critical: 'bg-danger-400', suspicious: 'bg-warning-400', normal: 'bg-success-400',
     open: 'bg-primary-400', investigating: 'bg-warning-400', closed: 'bg-surface-400',
     confirmed: 'bg-danger-400', false_positive: 'bg-success-400',
+    containing: 'bg-warning-400', resolved: 'bg-primary-400',
+    low: 'bg-surface-400', medium: 'bg-warning-400', high: 'bg-danger-400',
   };
   const cls = map[status] || 'bg-surface-500/15 text-surface-400 border-surface-500/30';
   return (

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
-  Shield, LayoutDashboard, AlertTriangle, Briefcase, MessageSquare, Search,
+  Shield, LayoutDashboard, AlertTriangle, ShieldAlert, Briefcase, MessageSquare, Search,
   Bell, Users, UserCircle, Lock, Menu, LogOut, ChevronDown,
 } from 'lucide-react';
 import { useAuth, isSecurity, isWorkspace, isAdmin } from '../auth/AuthContext';
@@ -96,13 +96,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <div className="px-3 pb-1 pt-4 text-[10px] font-semibold uppercase tracking-wider text-surface-600">Security</div>
               {link('/dashboard', 'Dashboard', LayoutDashboard)}
               {link('/alerts', 'Alerts', AlertTriangle)}
+              {link('/incidents', 'Incidents', ShieldAlert)}
             </>
           )}
 
           <div className="px-3 pb-1 pt-4 text-[10px] font-semibold uppercase tracking-wider text-surface-600">Personal</div>
           {link('/notifications', 'Notifications', Bell, unread)}
           {admin && link('/admin/users', 'User Management', Users)}
-          {link('/account', 'My Account', UserCircle)}
           {link('/my-data', 'My Data', Lock)}
         </nav>
 
@@ -121,6 +121,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </button>
             {menuOpen && (
               <div className="absolute bottom-full left-0 right-0 mb-2 animate-scaleIn overflow-hidden rounded-lg border border-surface-700 bg-surface-800 shadow-elevated">
+                <button
+                  onClick={() => { setMenuOpen(false); navigate('/account'); }}
+                  className="flex w-full items-center gap-2 px-3 py-2.5 text-sm text-surface-300 hover:bg-surface-700 hover:text-white"
+                >
+                  <UserCircle className="h-4 w-4" /> My Account
+                </button>
+                <div className="h-px bg-surface-700" />
                 <button
                   onClick={() => { logout(); navigate('/login'); }}
                   className="flex w-full items-center gap-2 px-3 py-2.5 text-sm text-surface-300 hover:bg-surface-700 hover:text-white"

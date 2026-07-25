@@ -52,10 +52,60 @@ export interface Investigation {
   analyst_id: number | null;
   state: string;
   notes: string | null;
+  severity: IncidentSeverity | null;
+  resolution_summary: string | null;
+  escalated_to_id: number | null;
+  escalated_at: string | null;
+  escalation_note: string | null;
   created_at: string;
   updated_at: string;
+  confirmed_at: string | null;
+  resolved_at: string | null;
   closed_at: string | null;
 }
+
+export type IncidentSeverity = 'low' | 'medium' | 'high' | 'critical';
+export type IncidentActionType =
+  | 'containment' | 'remediation' | 'escalation' | 'evidence' | 'note' | 'status_change';
+
+export interface IncidentAction {
+  id: number;
+  investigation_id: number;
+  actor_id: number;
+  actor_name?: string | null;
+  action_type: IncidentActionType;
+  description: string;
+  created_at: string;
+}
+
+export interface IncidentEvidence {
+  id: number;
+  investigation_id: number;
+  filename: string;
+  size_bytes: number | null;
+  description: string | null;
+  uploaded_by: number;
+  uploaded_by_name?: string | null;
+  created_at: string;
+}
+
+export interface IncidentSummary { id: number; name: string; }
+export interface IncidentDetail extends Investigation {
+  alert: Alert | null;
+  subject_user: IncidentSummary & { email: string } | null;
+  analyst: IncidentSummary | null;
+  escalated_to: IncidentSummary | null;
+  actions: IncidentAction[];
+  evidence: IncidentEvidence[];
+}
+
+export interface IncidentListItem extends Investigation {
+  alert_title: string | null;
+  subject_user_id: number | null;
+  subject_name: string | null;
+}
+
+export interface AdminSummary { id: number; name: string; email: string; }
 
 export interface ActivityPoint {
   action: string; risk: number; status: string; time: string;
@@ -167,5 +217,10 @@ export const INVESTIGATION_STATES = [
   'needs_evidence',
   'false_positive',
   'confirmed',
+  'containing',
+  'resolved',
   'closed',
 ] as const;
+
+// States reached only after a confirmed threat — the incident-response phase.
+export const RESPONSE_PHASE_STATES = ['confirmed', 'containing', 'resolved'] as const;

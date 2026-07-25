@@ -1,12 +1,13 @@
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 
-export function Modal({ open, onClose, title, children, footer }: {
+export function Modal({ open, onClose, title, children, footer, size = 'md' }: {
   open: boolean;
   onClose: () => void;
   title: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
+  size?: 'md' | 'lg';
 }) {
   useEffect(() => {
     if (!open) return;
@@ -28,7 +29,9 @@ export function Modal({ open, onClose, title, children, footer }: {
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="relative w-full max-w-md animate-scaleIn rounded-xl border border-surface-700 bg-surface-900 shadow-elevated"
+        className={`relative w-full animate-scaleIn rounded-xl border border-surface-700 bg-surface-900 shadow-elevated ${
+          size === 'lg' ? 'max-w-2xl' : 'max-w-md'
+        }`}
       >
         <div className="flex items-center justify-between border-b border-surface-800 px-5 py-4">
           <h2 className="text-sm font-semibold text-surface-100">{title}</h2>
@@ -40,7 +43,7 @@ export function Modal({ open, onClose, title, children, footer }: {
             <X className="h-4 w-4" />
           </button>
         </div>
-        <div className="px-5 py-4">{children}</div>
+        <div className="max-h-[75vh] overflow-y-auto px-5 py-4">{children}</div>
         {footer && (
           <div className="flex justify-end gap-2 border-t border-surface-800 px-5 py-3">
             {footer}

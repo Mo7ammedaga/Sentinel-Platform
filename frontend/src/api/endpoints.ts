@@ -3,7 +3,8 @@ import {
   Alert, DashboardStats, HighRiskUser, Investigation, Paginated, User, UserEvent,
   Workspace, Project, Task, Note, FileItem, DirectoryUser, Message,
   AppNotification, SearchResults, ManagedUser, Role, BaselineCoverage, FullProfile,
-  ModelPerformance, RiskTrendPoint, Session, ActivityPoint,
+  ModelPerformance, RiskTrendPoint, Session, ActivityPoint, IncidentDetail,
+  IncidentListItem, IncidentAction, IncidentEvidence, IncidentSeverity, AdminSummary,
 } from '../types';
 
 interface AuthResponse { access_token: string; refresh_token: string; user: User; }
@@ -59,8 +60,48 @@ export const securityApi = {
       .then((r) => r.data.trend),
   openInvestigation: (alertId: number) =>
     api.post<Investigation>(`/security/alerts/${alertId}/investigations`).then((r) => r.data),
-  updateInvestigation: (id: number, state: string, notes?: string) =>
-    api.patch<Investigation>(`/security/investigations/${id}`, { state, notes }).then((r) => r.data),
+  updateInvestigation: (id: number, state: string, notes?: string, resolution_summary?: string) =>
+    api.patch<Investigation>(`/security/investigations/${id}`, { state, notes, resolution_summary })
+      .then((r) => r.data),
+  investigation: (id: number) =>
+    api.get<IncidentDetail>(`/security/investigations/${id}`).then((r) => r.data),
+
+  // Incident response (post-confirmation SOC workflow).
+  incidents: (state?: string) =>
+    api.get<{ incidents: IncidentListItem[]; count: number }>('/security/incidents', {
+      params: state ? { state } : {},
+    }).then((r) => r.data),
+  setSeverity: (id: number, severity: IncidentSeverity) =>
+    api.post<Investigation>(`/security/investigations/${id}/severity`, { severity }).then((r) => r.data),
+  escalate: (id: number, to_user_id: number, note?: string) =>
+    api.post<Investigation>(`/security/investigations/${id}/escalate`, { to_user_id, note })
+      .then((r) => r.data),
+  addAction: (id: number, action_type: 'containment' | 'remediation' | 'note', description: string) =>
+    api.post<IncidentAction>(`/security/investigations/${id}/actions`, { action_type, description })
+      .then((r) => r.data),
+  admins: () => api.get<{ admins: AdminSummary[] }>('/security/admins').then((r) => r.data.admins),
+
+  uploadEvidence: (id: number, file: File, description?: string) => {
+    const form = new FormData();
+    form.append('file', file);
+    if (description) form.append('description', description);
+    return api.post<IncidentEvidence>(`/security/investigations/${id}/evidence`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then((r) => r.data);
+  },
+  downloadEvidence: async (id: number, filename: string) => {
+    const res = await fetch(`${API_BASE}/api/v1/security/evidence/${id}/download`, {
+      headers: { Authorization: `Bearer ${tokenStore.access()}` },
+    });
+    if (!res.ok) throw new Error('Download failed');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
 };
 
 // Workspace — each mutating call generates a behavioural Event server-side.
