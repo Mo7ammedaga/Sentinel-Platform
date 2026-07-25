@@ -1,10 +1,15 @@
 import React, { useEffect, useState } from 'react';
+import { Download, ChevronLeft, ChevronRight, Lock } from 'lucide-react';
 import { privacyApi } from '../api/endpoints';
 import { apiError, API_BASE, tokenStore } from '../api/client';
+import { useToast } from '../components/Toast';
 import { UserEvent } from '../types';
-import { Card, Badge, Spinner, ErrorNote } from '../components/ui';
+import { Card, Badge, ErrorNote, EmptyState } from '../components/ui';
+import { Button } from '../components/Button';
+import { TableSkeleton } from '../components/Skeleton';
 
 export function MyDataPage() {
+  const { show } = useToast();
   const [events, setEvents] = useState<UserEvent[]>([]);
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
@@ -19,10 +24,8 @@ export function MyDataPage() {
       .finally(() => setLoading(false));
   }, [page]);
 
-  const exportUrl = `${API_BASE}/api/v1/me/events/export`;
   const download = async () => {
-    // Fetch with auth then save, since it's a protected endpoint.
-    const res = await fetch(exportUrl, {
+    const res = await fetch(`${API_BASE}/api/v1/me/events/export`, {
       headers: { Authorization: `Bearer ${tokenStore.access()}` },
     });
     const blob = await res.blob();
@@ -32,6 +35,7 @@ export function MyDataPage() {
     a.download = 'my_events.json';
     a.click();
     URL.revokeObjectURL(url);
+    show('Export downloaded.', 'success');
   };
 
   return (
@@ -39,44 +43,47 @@ export function MyDataPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold text-white">My Data</h1>
-          <p className="text-sm text-muted">
+          <p className="text-sm text-surface-500">
             Every event recorded about your activity. You can export it at any time.
           </p>
         </div>
-        <button
-          onClick={download}
-          className="rounded border border-slate-700 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-800"
-        >
-          Export (JSON)
-        </button>
+        <Button variant="secondary" icon={<Download className="h-3.5 w-3.5" />} onClick={download}>
+          Export
+        </Button>
       </div>
 
       {error && <ErrorNote message={error} />}
       {loading ? (
-        <Spinner />
+        <Card><TableSkeleton rows={6} cols={4} /></Card>
+      ) : events.length === 0 ? (
+        <EmptyState message="No events recorded yet." icon={Lock} />
       ) : (
-        <Card>
+        <Card className="!p-0 overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="text-left text-xs uppercase text-muted">
-              <tr><th className="py-1">Action</th><th>Resource</th><th>Status</th><th>When</th></tr>
+            <thead className="border-b border-surface-800 text-left text-xs uppercase text-surface-600">
+              <tr><th className="px-4 py-3">Action</th><th>Resource</th><th>Status</th><th>When</th></tr>
             </thead>
             <tbody>
               {events.map((e) => (
-                <tr key={e.id} className="border-t border-slate-800">
-                  <td className="py-2">{e.action_type}</td>
-                  <td className="text-muted">{e.resource_type}</td>
+                <tr key={e.id} className="border-t border-surface-800 hover:bg-surface-800/30">
+                  <td className="px-4 py-2.5 text-surface-200">{e.action_type.replace(/_/g, ' ')}</td>
+                  <td className="text-surface-500">{e.resource_type}</td>
                   <td><Badge status={e.status} /></td>
-                  <td className="text-muted">{new Date(e.created_at).toLocaleString()}</td>
+                  <td className="text-surface-500">{new Date(e.created_at).toLocaleString()}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <div className="mt-3 flex items-center justify-between text-xs text-muted">
+          <div className="flex items-center justify-between border-t border-surface-800 px-4 py-3 text-xs text-surface-500">
             <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}
-              className="rounded border border-slate-700 px-2 py-1 disabled:opacity-40">Prev</button>
+              className="flex items-center gap-1 rounded-lg border border-surface-700 px-2 py-1 disabled:opacity-40">
+              <ChevronLeft className="h-3 w-3" /> Prev
+            </button>
             <span>Page {page} of {pages}</span>
             <button disabled={page >= pages} onClick={() => setPage((p) => p + 1)}
-              className="rounded border border-slate-700 px-2 py-1 disabled:opacity-40">Next</button>
+              className="flex items-center gap-1 rounded-lg border border-surface-700 px-2 py-1 disabled:opacity-40">
+              Next <ChevronRight className="h-3 w-3" />
+            </button>
           </div>
         </Card>
       )}

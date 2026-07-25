@@ -3,7 +3,7 @@ import {
   Alert, DashboardStats, HighRiskUser, Investigation, Paginated, User, UserEvent,
   Workspace, Project, Task, Note, FileItem, DirectoryUser, Message,
   AppNotification, SearchResults, ManagedUser, Role, BaselineCoverage, FullProfile,
-  ModelPerformance, RiskTrendPoint, Session,
+  ModelPerformance, RiskTrendPoint, Session, ActivityPoint,
 } from '../types';
 
 interface AuthResponse { access_token: string; refresh_token: string; user: User; }
@@ -41,6 +41,9 @@ export const authApi = {
 export const securityApi = {
   stats: () => api.get<DashboardStats>('/dashboard/stats').then((r) => r.data),
   analyze: () => api.post('/ai/analyze').then((r) => r.data),
+  userActivity: (userId: number) =>
+    api.get<{ user_id: number; activity: ActivityPoint[] }>(`/dashboard/users/${userId}/activity`)
+      .then((r) => r.data.activity),
   alerts: (status?: string) =>
     api.get<{ alerts: Alert[]; count: number }>('/security/alerts', {
       params: status ? { status } : {},
@@ -72,6 +75,7 @@ export const workspaceApi = {
       .then((r) => r.data.items),
   createProject: (workspace_id: number, name: string) =>
     api.post<Project>('/projects', { workspace_id, name }).then((r) => r.data),
+  deleteProject: (id: number) => api.delete(`/projects/${id}`).then((r) => r.data),
 
   listTasks: (project_id: number) =>
     api.get<Paginated<Task>>('/tasks', { params: { project_id, per_page: 100 } })
@@ -80,6 +84,8 @@ export const workspaceApi = {
     api.post<Task>('/tasks', { project_id, title }).then((r) => r.data),
   completeTask: (id: number) =>
     api.put<Task>(`/tasks/${id}`, { status: 'completed' }).then((r) => r.data),
+  updateTaskStatus: (id: number, status: 'pending' | 'in_progress' | 'completed') =>
+    api.put<Task>(`/tasks/${id}`, { status }).then((r) => r.data),
   deleteTask: (id: number) => api.delete(`/tasks/${id}`).then((r) => r.data),
 
   listNotes: (task_id: number) =>

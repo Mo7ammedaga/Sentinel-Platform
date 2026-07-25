@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './auth/AuthContext';
 import { ProtectedRoute } from './auth/ProtectedRoute';
 import { Layout } from './components/Layout';
+import { ToastProvider } from './components/Toast';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
 import { DashboardPage } from './pages/DashboardPage';
@@ -28,24 +29,26 @@ function Shell({ children, requireSecurity = false, requireWorkspace = false, re
 
 export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignupPage />} />
-          <Route path="/workspace" element={<Shell requireWorkspace><WorkspacePage /></Shell>} />
-          <Route path="/chat" element={<Shell requireWorkspace><ChatPage /></Shell>} />
-          <Route path="/search" element={<Shell requireWorkspace><SearchPage /></Shell>} />
-          <Route path="/notifications" element={<Shell><NotificationsPage /></Shell>} />
-          <Route path="/dashboard" element={<Shell requireSecurity><DashboardPage /></Shell>} />
-          <Route path="/alerts" element={<Shell requireSecurity><AlertsPage /></Shell>} />
-          <Route path="/admin/users" element={<Shell requireAdmin><UserManagementPage /></Shell>} />
-          <Route path="/account" element={<Shell><AccountPage /></Shell>} />
-          <Route path="/my-data" element={<Shell><MyDataPage /></Shell>} />
-          <Route path="/privacy" element={<Shell><PrivacyPage /></Shell>} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+    <ToastProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
+            <Route path="/workspace" element={<Shell requireWorkspace><WorkspacePage /></Shell>} />
+            <Route path="/chat" element={<Shell requireWorkspace><ChatPage /></Shell>} />
+            <Route path="/search" element={<Shell requireWorkspace><SearchPage /></Shell>} />
+            <Route path="/notifications" element={<Shell><NotificationsPage /></Shell>} />
+            <Route path="/dashboard" element={<Shell requireSecurity><DashboardPage /></Shell>} />
+            <Route path="/alerts" element={<Shell requireSecurity><AlertsPage /></Shell>} />
+            <Route path="/admin/users" element={<Shell requireAdmin><UserManagementPage /></Shell>} />
+            <Route path="/account" element={<Shell><AccountPage /></Shell>} />
+            <Route path="/my-data" element={<Shell><MyDataPage /></Shell>} />
+            <Route path="/privacy" element={<Shell><PrivacyPage /></Shell>} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </ToastProvider>
   );
 }

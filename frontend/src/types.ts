@@ -57,6 +57,10 @@ export interface Investigation {
   closed_at: string | null;
 }
 
+export interface ActivityPoint {
+  action: string; risk: number; status: string; time: string;
+}
+
 export interface ModelVersionPerformance {
   model_version: string;
   confirmed: number;

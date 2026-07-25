@@ -1,80 +1,124 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { LucideIcon, AlertCircle, Loader2, Inbox } from 'lucide-react';
 
-export function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+export function Card({ children, className = '', hover = false }: {
+  children: React.ReactNode; className?: string; hover?: boolean;
+}) {
   return (
-    <div className={`rounded-lg border border-slate-800 bg-slate-900/60 p-5 ${className}`}>
+    <div
+      className={`rounded-xl border border-surface-800 bg-surface-900/60 p-5 shadow-card
+        transition-all duration-200 ${hover ? 'hover:-translate-y-0.5 hover:border-surface-700 hover:shadow-elevated' : ''}
+        ${className}`}
+    >
       {children}
     </div>
   );
 }
 
-export function StatCard({ label, value, tone = 'normal', onClick }: {
-  label: string; value: React.ReactNode; tone?: 'total' | 'critical' | 'suspicious' | 'normal'; onClick?: () => void;
+export function StatCard({ label, value, tone = 'normal', onClick, icon: Icon }: {
+  label: string; value: React.ReactNode; tone?: 'total' | 'critical' | 'suspicious' | 'normal';
+  onClick?: () => void; icon?: LucideIcon;
 }) {
-  const bar: Record<string, string> = {
-    total: 'border-l-accent',
-    critical: 'border-l-critical',
-    suspicious: 'border-l-suspicious',
-    normal: 'border-l-normal',
+  const styles: Record<string, { bar: string; iconBg: string; iconColor: string }> = {
+    total: { bar: 'border-l-primary-500', iconBg: 'bg-primary-500/10', iconColor: 'text-primary-400' },
+    critical: { bar: 'border-l-danger-500', iconBg: 'bg-danger-500/10', iconColor: 'text-danger-400' },
+    suspicious: { bar: 'border-l-warning-500', iconBg: 'bg-warning-500/10', iconColor: 'text-warning-400' },
+    normal: { bar: 'border-l-success-500', iconBg: 'bg-success-500/10', iconColor: 'text-success-400' },
   };
-  return (
-    <Card className={`border-l-4 ${bar[tone]} ${onClick ? 'cursor-pointer transition hover:bg-slate-900' : ''}`}>
-      {onClick ? (
-        <button onClick={onClick} className="block w-full text-left">
-          <div className="text-xs uppercase tracking-wide text-muted">{label}</div>
-          <div className="mt-1 text-3xl font-semibold text-slate-100">{value}</div>
-          <div className="mt-1 text-xs text-accent">View alerts →</div>
-        </button>
-      ) : (
-        <>
-          <div className="text-xs uppercase tracking-wide text-muted">{label}</div>
-          <div className="mt-1 text-3xl font-semibold text-slate-100">{value}</div>
-        </>
+  const s = styles[tone];
+  const content = (
+    <div className="flex items-start justify-between">
+      <div>
+        <div className="text-xs font-medium uppercase tracking-wide text-surface-500">{label}</div>
+        <div className="mt-1.5 text-3xl font-semibold tabular-nums text-surface-50">{value}</div>
+        {onClick && <div className="mt-1.5 text-xs font-medium text-primary-400">View alerts →</div>}
+      </div>
+      {Icon && (
+        <div className={`rounded-lg p-2 ${s.iconBg}`}>
+          <Icon className={`h-4 w-4 ${s.iconColor}`} />
+        </div>
       )}
+    </div>
+  );
+  return (
+    <Card hover={!!onClick} className={`border-l-4 ${s.bar} ${onClick ? 'cursor-pointer' : ''}`}>
+      {onClick ? <button onClick={onClick} className="block w-full text-left">{content}</button> : content}
     </Card>
   );
 }
 
-export function Badge({ status }: { status: string }) {
+export function Badge({ status, dot = false }: { status: string; dot?: boolean }) {
   const map: Record<string, string> = {
-    critical: 'bg-red-500/15 text-red-400 border-red-500/30',
-    suspicious: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
-    normal: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-    open: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
-    investigating: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
-    closed: 'bg-slate-500/15 text-slate-400 border-slate-500/30',
-    confirmed: 'bg-red-500/15 text-red-400 border-red-500/30',
-    false_positive: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+    critical: 'bg-danger-500/15 text-danger-400 border-danger-500/30',
+    suspicious: 'bg-warning-500/15 text-warning-400 border-warning-500/30',
+    normal: 'bg-success-500/15 text-success-400 border-success-500/30',
+    open: 'bg-primary-500/15 text-primary-400 border-primary-500/30',
+    investigating: 'bg-warning-500/15 text-warning-400 border-warning-500/30',
+    closed: 'bg-surface-500/15 text-surface-400 border-surface-500/30',
+    confirmed: 'bg-danger-500/15 text-danger-400 border-danger-500/30',
+    false_positive: 'bg-success-500/15 text-success-400 border-success-500/30',
   };
-  const cls = map[status] || 'bg-slate-500/15 text-slate-400 border-slate-500/30';
+  const dotColor: Record<string, string> = {
+    critical: 'bg-danger-400', suspicious: 'bg-warning-400', normal: 'bg-success-400',
+    open: 'bg-primary-400', investigating: 'bg-warning-400', closed: 'bg-surface-400',
+    confirmed: 'bg-danger-400', false_positive: 'bg-success-400',
+  };
+  const cls = map[status] || 'bg-surface-500/15 text-surface-400 border-surface-500/30';
   return (
-    <span className={`inline-block rounded border px-2 py-0.5 text-xs font-medium ${cls}`}>
+    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium ${cls}`}>
+      {dot && <span className={`h-1.5 w-1.5 rounded-full ${dotColor[status] || 'bg-surface-400'}`} />}
       {status.replace('_', ' ')}
     </span>
   );
 }
 
-export function Avatar({ name }: { name: string }) {
+export function Avatar({ name, avatarUrl, size = 'md' }: {
+  name: string; avatarUrl?: string | null; size?: 'sm' | 'md' | 'lg' | 'xl';
+}) {
+  const [broken, setBroken] = useState(false);
   const initials = name.trim().split(/\s+/).map((p) => p[0]).slice(0, 2).join('').toUpperCase();
+  const dims: Record<string, string> = { sm: 'h-6 w-6 text-[10px]', md: 'h-8 w-8 text-xs', lg: 'h-16 w-16 text-lg', xl: 'h-24 w-24 text-2xl' };
+
+  if (avatarUrl && !broken) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={name}
+        onError={() => setBroken(true)}
+        className={`shrink-0 rounded-full border-2 border-surface-800 object-cover ${dims[size]}`}
+      />
+    );
+  }
   return (
-    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-700 text-xs font-semibold text-slate-200">
+    <div className={`flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary-600 to-primary-800 font-semibold text-white ${dims[size]}`}>
       {initials || '?'}
     </div>
   );
 }
 
 export function Spinner({ label = 'Loading…' }: { label?: string }) {
-  return <div className="p-6 text-sm text-muted">{label}</div>;
+  return (
+    <div className="flex items-center justify-center gap-2 p-8 text-sm text-surface-500">
+      <Loader2 className="h-4 w-4 animate-spin" />
+      {label}
+    </div>
+  );
 }
 
 export function ErrorNote({ message }: { message: string }) {
   return (
-    <div className="rounded border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+    <div className="flex animate-slideUp items-start gap-2.5 rounded-lg border border-danger-500/30 bg-danger-500/10 px-4 py-3 text-sm text-danger-300">
+      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
       {message}
     </div>
   );
 }
 
-export function EmptyState({ message }: { message: string }) {
-  return <p className="py-6 text-center text-sm text-muted">{message}</p>;
+export function EmptyState({ message, icon: Icon = Inbox }: { message: string; icon?: LucideIcon }) {
+  return (
+    <div className="flex flex-col items-center gap-2 py-10 text-center">
+      <Icon className="h-8 w-8 text-surface-700" />
+      <p className="text-sm text-surface-500">{message}</p>
+    </div>
+  );
 }

@@ -1,7 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import {
+  Shield, LayoutDashboard, AlertTriangle, Briefcase, MessageSquare, Search,
+  Bell, Users, UserCircle, Lock, Menu, LogOut, ChevronDown,
+} from 'lucide-react';
 import { useAuth, isSecurity, isWorkspace, isAdmin } from '../auth/AuthContext';
 import { notificationsApi } from '../api/endpoints';
+import { Avatar } from './ui';
+import { CommandPalette } from './CommandPalette';
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
@@ -11,6 +17,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const admin = isAdmin(user?.role);
   const [unread, setUnread] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -20,17 +27,31 @@ export function Layout({ children }: { children: React.ReactNode }) {
     return () => clearInterval(id);
   }, [user]);
 
-  const link = (to: string, label: string) => (
+  const link = (to: string, label: string, Icon: React.ElementType, badge?: number) => (
     <NavLink
       to={to}
       onClick={() => setSidebarOpen(false)}
       className={({ isActive }) =>
-        `block rounded px-3 py-2 text-sm ${
-          isActive ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'
+        `group flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150 ${
+          isActive
+            ? 'bg-primary-500/10 text-primary-300'
+            : 'text-surface-400 hover:bg-surface-800/70 hover:text-surface-100'
         }`
       }
     >
-      {label}
+      {({ isActive }) => (
+        <>
+          <span className="flex items-center gap-2.5">
+            <Icon className={`h-4 w-4 ${isActive ? 'text-primary-400' : 'text-surface-500 group-hover:text-surface-300'}`} />
+            {label}
+          </span>
+          {!!badge && badge > 0 && (
+            <span className="rounded-full bg-danger-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+              {badge}
+            </span>
+          )}
+        </>
+      )}
     </NavLink>
   );
 
@@ -40,75 +61,100 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <button
           aria-label="Close menu"
           onClick={() => setSidebarOpen(false)}
-          className="fixed inset-0 z-20 bg-black/50 md:hidden"
+          className="fixed inset-0 z-20 bg-black/60 backdrop-blur-sm md:hidden"
         />
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-30 w-56 shrink-0 border-r border-slate-800 bg-slate-950 p-4 transition-transform md:static md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-30 flex w-64 shrink-0 flex-col border-r border-surface-800
+          bg-surface-950 transition-transform duration-200 md:static md:translate-x-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="mb-6 px-2">
-          <div className="text-lg font-semibold text-white">Sentinel</div>
-          <div className="text-xs text-muted">Security Platform</div>
+        <div className="flex items-center gap-2 px-5 py-5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary-500 to-primary-700 shadow-glow">
+            <Shield className="h-4.5 w-4.5 text-white" strokeWidth={2.25} />
+          </div>
+          <div>
+            <div className="text-sm font-semibold leading-none text-white">Sentinel</div>
+            <div className="mt-0.5 text-[11px] leading-none text-surface-500">Security Platform</div>
+          </div>
         </div>
-        <nav className="space-y-1">
-          {workspace && link('/workspace', 'Workspace')}
-          {workspace && link('/chat', 'Team Chat')}
-          {workspace && link('/search', 'Search')}
-          <NavLink
-            to="/notifications"
-            onClick={() => setSidebarOpen(false)}
-            className={({ isActive }) =>
-              `flex items-center justify-between rounded px-3 py-2 text-sm ${
-                isActive ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'
-              }`
-            }
-          >
-            <span>Notifications</span>
-            {unread > 0 && (
-              <span className="rounded-full bg-critical px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                {unread}
-              </span>
-            )}
-          </NavLink>
-          {security && link('/dashboard', 'Security Dashboard')}
-          {security && link('/alerts', 'Alerts')}
-          {admin && link('/admin/users', 'User Management')}
-          {link('/account', 'My Account')}
-          {link('/my-data', 'My Data')}
-          {link('/privacy', 'Privacy Notice')}
+
+        <nav className="flex-1 space-y-0.5 overflow-y-auto px-3">
+          {workspace && (
+            <>
+              <div className="px-3 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wider text-surface-600">Workspace</div>
+              {link('/workspace', 'Workspace', Briefcase)}
+              {link('/chat', 'Team Chat', MessageSquare)}
+              {link('/search', 'Search', Search)}
+            </>
+          )}
+
+          {security && (
+            <>
+              <div className="px-3 pb-1 pt-4 text-[10px] font-semibold uppercase tracking-wider text-surface-600">Security</div>
+              {link('/dashboard', 'Dashboard', LayoutDashboard)}
+              {link('/alerts', 'Alerts', AlertTriangle)}
+            </>
+          )}
+
+          <div className="px-3 pb-1 pt-4 text-[10px] font-semibold uppercase tracking-wider text-surface-600">Personal</div>
+          {link('/notifications', 'Notifications', Bell, unread)}
+          {admin && link('/admin/users', 'User Management', Users)}
+          {link('/account', 'My Account', UserCircle)}
+          {link('/my-data', 'My Data', Lock)}
         </nav>
+
+        <div className="border-t border-surface-800 p-3">
+          <div className="relative">
+            <button
+              onClick={() => setMenuOpen((v) => !v)}
+              className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition-colors hover:bg-surface-800/70"
+            >
+              <Avatar name={user?.name || '?'} size="sm" />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-medium text-surface-200">{user?.name}</span>
+                <span className="block truncate text-xs capitalize text-surface-500">{user?.role}</span>
+              </span>
+              <ChevronDown className="h-3.5 w-3.5 shrink-0 text-surface-500" />
+            </button>
+            {menuOpen && (
+              <div className="absolute bottom-full left-0 right-0 mb-2 animate-scaleIn overflow-hidden rounded-lg border border-surface-700 bg-surface-800 shadow-elevated">
+                <button
+                  onClick={() => { logout(); navigate('/login'); }}
+                  className="flex w-full items-center gap-2 px-3 py-2.5 text-sm text-surface-300 hover:bg-surface-700 hover:text-white"
+                >
+                  <LogOut className="h-4 w-4" /> Sign out
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </aside>
 
       <div className="flex-1">
-        <header className="flex items-center justify-between border-b border-slate-800 px-4 py-3 md:px-6">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              aria-label="Open menu"
-              className="rounded border border-slate-700 p-2 text-slate-300 md:hidden"
-            >
-              <span className="block h-0.5 w-4 bg-current" />
-              <span className="my-1 block h-0.5 w-4 bg-current" />
-              <span className="block h-0.5 w-4 bg-current" />
-            </button>
-            <div className="text-sm text-muted">
-              {user?.name} · <span className="capitalize">{user?.role}</span>
-            </div>
-          </div>
+        <header className="flex items-center justify-between border-b border-surface-800 bg-surface-950/60 px-4 py-3 backdrop-blur md:px-6">
           <button
-            onClick={() => {
-              logout();
-              navigate('/login');
-            }}
-            className="rounded border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Open menu"
+            className="rounded-lg border border-surface-700 p-2 text-surface-300 hover:bg-surface-800 md:hidden"
           >
-            Sign out
+            <Menu className="h-4 w-4" />
           </button>
+          {workspace ? (
+            <button
+              onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
+              className="hidden items-center gap-2 rounded-lg border border-surface-800 bg-surface-900/60 px-3 py-1.5 text-xs text-surface-500 transition-colors hover:border-surface-700 hover:text-surface-300 md:flex"
+            >
+              Search… <kbd className="rounded border border-surface-700 px-1 text-[10px]">⌘K</kbd>
+            </button>
+          ) : <div className="hidden md:block" />}
+          <div className="text-sm text-surface-500 md:hidden">Sentinel</div>
+          <div />
         </header>
-        <main className="p-4 md:p-6">{children}</main>
+        {workspace && <CommandPalette />}
+        <main className="animate-fadeIn p-4 md:p-6">{children}</main>
       </div>
     </div>
   );

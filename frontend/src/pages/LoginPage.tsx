@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Shield, ArrowRight } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 import { apiError } from '../api/client';
 import { ErrorNote } from '../components/ui';
+import { Input } from '../components/Field';
+import { Button } from '../components/Button';
 
 export function LoginPage() {
   const { login } = useAuth();
@@ -18,8 +21,6 @@ export function LoginPage() {
     setBusy(true);
     try {
       await login(email, password);
-      // Land on the dashboard; ProtectedRoute redirects non-security users to
-      // /my-data automatically.
       navigate('/dashboard');
     } catch (err) {
       setError(apiError(err));
@@ -29,42 +30,35 @@ export function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-full items-center justify-center p-6">
-      <form onSubmit={submit} className="w-full max-w-sm space-y-4 rounded-lg border border-slate-800 bg-slate-900/60 p-6">
-        <div>
-          <div className="text-xl font-semibold text-white">Sentinel</div>
-          <div className="text-sm text-muted">Sign in to the security platform</div>
+    <div className="relative flex min-h-full items-center justify-center overflow-hidden p-6">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(37,99,235,0.12),transparent_50%)]" />
+
+      <form onSubmit={submit} className="relative w-full max-w-sm animate-slideUp space-y-5 rounded-2xl border border-surface-800 bg-surface-900/80 p-7 shadow-elevated backdrop-blur">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 shadow-glow">
+            <Shield className="h-5 w-5 text-white" strokeWidth={2.25} />
+          </div>
+          <div>
+            <div className="text-lg font-semibold text-white">Sentinel</div>
+            <div className="text-sm text-surface-500">Sign in to the security platform</div>
+          </div>
         </div>
+
         {error && <ErrorNote message={error} />}
-        <div>
-          <label className="mb-1 block text-xs text-muted">Email</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none focus:border-accent"
-          />
+
+        <div className="space-y-3">
+          <Input label="Email" type="email" value={email} autoFocus
+                 onChange={(e) => setEmail(e.target.value)} required />
+          <Input label="Password" type="password" value={password}
+                 onChange={(e) => setPassword(e.target.value)} required />
         </div>
-        <div>
-          <label className="mb-1 block text-xs text-muted">Password</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none focus:border-accent"
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={busy}
-          className="w-full rounded bg-accent px-3 py-2 text-sm font-medium text-white disabled:opacity-60"
-        >
+
+        <Button type="submit" loading={busy} className="w-full" icon={!busy && <ArrowRight className="h-3.5 w-3.5" />}>
           {busy ? 'Signing in…' : 'Sign in'}
-        </button>
-        <div className="text-center text-xs text-muted">
-          No account? <Link to="/signup" className="text-accent">Create one</Link>
+        </Button>
+
+        <div className="text-center text-xs text-surface-500">
+          No account? <Link to="/signup" className="font-medium text-primary-400 hover:text-primary-300">Create one</Link>
         </div>
       </form>
     </div>

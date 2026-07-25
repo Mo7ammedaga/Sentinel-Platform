@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { UserPlus } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 import { apiError } from '../api/client';
 import { ErrorNote } from '../components/ui';
-
-const field =
-  'w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none focus:border-accent';
+import { Input } from '../components/Field';
+import { Button } from '../components/Button';
 
 export function SignupPage() {
   const { register } = useAuth();
@@ -32,26 +32,33 @@ export function SignupPage() {
   };
 
   return (
-    <div className="flex min-h-full items-center justify-center p-6">
-      <form onSubmit={submit} className="w-full max-w-sm space-y-4 rounded-lg border border-slate-800 bg-slate-900/60 p-6">
-        <div>
-          <div className="text-xl font-semibold text-white">Create your account</div>
-          <div className="text-sm text-muted">You'll join as an employee. Roles are assigned by an admin.</div>
+    <div className="relative flex min-h-full items-center justify-center overflow-hidden p-6">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(37,99,235,0.12),transparent_50%)]" />
+
+      <form onSubmit={submit} className="relative w-full max-w-sm animate-slideUp space-y-5 rounded-2xl border border-surface-800 bg-surface-900/80 p-7 shadow-elevated backdrop-blur">
+        <div className="text-center">
+          <div className="text-lg font-semibold text-white">Create your account</div>
+          <div className="mt-1 text-sm text-surface-500">You'll join as an employee — roles are assigned by an admin.</div>
         </div>
+
         {error && <ErrorNote message={error} />}
-        <div className="flex gap-3">
-          <input placeholder="First name" value={form.first_name} onChange={set('first_name')} required className={field} />
-          <input placeholder="Last name" value={form.last_name} onChange={set('last_name')} required className={field} />
+
+        <div className="space-y-3">
+          <div className="flex gap-3">
+            <Input label="First name" value={form.first_name} onChange={set('first_name')} required autoFocus />
+            <Input label="Last name" value={form.last_name} onChange={set('last_name')} required />
+          </div>
+          <Input label="Email" type="email" value={form.email} onChange={set('email')} required />
+          <Input label="Password" type="password" hint="Minimum 8 characters" value={form.password}
+                 onChange={set('password')} minLength={8} required />
         </div>
-        <input type="email" placeholder="Email" value={form.email} onChange={set('email')} required className={field} />
-        <input type="password" placeholder="Password (min 8 characters)" value={form.password}
-               onChange={set('password')} minLength={8} required className={field} />
-        <button type="submit" disabled={busy}
-                className="w-full rounded bg-accent px-3 py-2 text-sm font-medium text-white disabled:opacity-60">
+
+        <Button type="submit" loading={busy} className="w-full" icon={!busy && <UserPlus className="h-3.5 w-3.5" />}>
           {busy ? 'Creating…' : 'Create account'}
-        </button>
-        <div className="text-center text-xs text-muted">
-          Already have an account? <Link to="/login" className="text-accent">Sign in</Link>
+        </Button>
+
+        <div className="text-center text-xs text-surface-500">
+          Already have an account? <Link to="/login" className="font-medium text-primary-400 hover:text-primary-300">Sign in</Link>
         </div>
       </form>
     </div>
