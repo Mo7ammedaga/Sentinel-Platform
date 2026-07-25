@@ -20,7 +20,8 @@ security_bp = Blueprint('security', __name__, url_prefix='/api/v1/security')
 def list_alerts():
     """List AI-raised alerts, newest first, with WHO triggered them. Optional
     ?status= filter."""
-    alerts = security_service.list_alerts(status=request.args.get('status'))
+    org = current_user().organization_id
+    alerts = security_service.list_alerts(org, status=request.args.get('status'))
     return jsonify({'alerts': alerts, 'count': len(alerts)}), 200
 
 
@@ -29,7 +30,8 @@ def list_alerts():
 @role_required(*SECURITY_ROLES)
 def high_risk_users():
     """Users ranked by current aggregate risk."""
-    return jsonify({'users': security_service.high_risk_users()}), 200
+    org = current_user().organization_id
+    return jsonify({'users': security_service.high_risk_users(org)}), 200
 
 
 @security_bp.route('/baseline-coverage', methods=['GET'])

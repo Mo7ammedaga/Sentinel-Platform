@@ -124,10 +124,10 @@ def _update_risk_scores(user_ids):
             rs.last_flagged_at = datetime.utcnow()
 
 
-def list_alerts(status=None, limit=100):
+def list_alerts(org_id, status=None, limit=100):
     """Alerts newest-first, enriched with WHO triggered them — an analyst
     cannot investigate a bare user_id."""
-    query = Alert.query
+    query = Alert.query.filter_by(organization_id=org_id)
     if status:
         query = query.filter_by(status=status)
     alerts = query.order_by(Alert.created_at.desc()).limit(limit).all()
@@ -491,9 +491,10 @@ def risk_trend(org_id, days=14):
     } for r in rows]
 
 
-def high_risk_users(limit=20):
+def high_risk_users(org_id, limit=20):
     """Users ranked by current risk — powers the 'High-Risk Users' view."""
-    rows = (RiskScore.query.filter(RiskScore.current_score > 0)
+    rows = (RiskScore.query.filter(RiskScore.organization_id == org_id,
+                                   RiskScore.current_score > 0)
             .order_by(RiskScore.current_score.desc()).limit(limit).all())
     result = []
     for rs in rows:
